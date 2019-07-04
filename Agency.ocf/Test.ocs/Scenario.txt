@@ -1,0 +1,14 @@
+[Head]
+Title=Test
+Version=8,0
+
+[Definitions]
+Definition2=LibraryCharacter.ocd
+Definition3=LibraryAI.ocd
+Definition4=Agency.ocd
+
+[Player1]
+Crew=Character_Player=1
+
+[Landscape]
+MapWidth=20

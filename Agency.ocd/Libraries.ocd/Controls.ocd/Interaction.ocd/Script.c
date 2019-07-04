@@ -1,6 +1,6 @@
 /**
 	Handles interactions with other objects.
-	
+
 	Copied from Objects.ocd, will be changed as I go along.
 */
 
@@ -28,17 +28,17 @@ public func OnShiftCursor(object new_cursor)
 
 public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, int status)
 {
-	if (!this) 
+	if (!this)
 		return inherited(plr, ctrl, x, y, strength, repeat, status, ...);
-	
+
 	// Begin interaction.
 	if (ctrl == CON_Interact && status == CONS_Down)
-	{			
+	{
 		this->CancelUse();
 		BeginInteract();
 		return true;
 	}
-	
+
 	// Switch object or finish interaction?
 	if (this.control.is_interacting)
 	{
@@ -48,20 +48,20 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 			AbortInteract();
 			return true;
 		}
-		
+
 		// Finish picking up (aka "collect").
 		if (ctrl == CON_Interact && status == CONS_Up)
 		{
 			EndInteract();
 			return true;
 		}
-		
+
 		// Switch left/right through objects.
 		var dir = nil;
 		if (ctrl == CON_InteractNext_Left) dir = -1;
 		else if (ctrl == CON_InteractNext_Right) dir = 1;
 		else if (ctrl == CON_InteractNext_CycleObject) dir = 0;
-		
+
 		if (dir != nil)
 		{
 			var item = FindNextInteraction(this.control.interaction_hud_controller->GetCurrentInteraction(), dir);
@@ -70,7 +70,7 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 			return true;
 		}
 	}
-	
+
 	return inherited(plr, ctrl, x, y, strength, repeat, status, ...);
 }
 
@@ -80,11 +80,11 @@ private func FxIntHighlightInteractionStart(object target, proplist fx, temp, pr
 	fx.obj = interaction.interaction_object;
 	fx.interaction = interaction;
 	fx.interaction_help = target.control.interaction_hud_controller->GetInteractionHelp(interaction, target);
-	
+
 	fx.dummy = CreateObject(Dummy, fx.obj->GetX() - GetX(), fx.obj->GetY() - GetY(), GetOwner());
-	fx.dummy.ActMap = 
+	fx.dummy.ActMap =
 	{
-		Attach = 
+		Attach =
 		{
 			Name = "Attach",
 			Procedure = DFA_ATTACH,
@@ -113,16 +113,16 @@ private func FxIntHighlightInteractionStart(object target, proplist fx, temp, pr
 	// Center dummy!
 	fx.dummy->SetVertexXY(0, fx.obj->GetVertex(0, VTX_X), fx.obj->GetVertex(0, VTX_Y));
 	fx.dummy->SetAction("Attach", fx.obj);
-	
+
 	fx.width  = fx.obj->GetDefWidth();
 	fx.height = fx.obj->GetDefHeight();
-	
+
 	// Draw the item's graphics in front of it again to achieve a highlighting effect.
 	fx.dummy->SetGraphics(nil, nil, 1, GFXOV_MODE_Object, nil, GFX_BLIT_Additive, fx.obj);
-	
+
 	var custom_selector = nil;
 	if (fx.obj) custom_selector = fx.obj->~DrawCustomInteractionSelector(fx.dummy, target, fx.interaction.interaction_index, fx.interaction.extra_data);
-	
+
 	if (!custom_selector)
 	{
 		fx.scheduled_selection_particle = (FrameCounter() - this.control.interaction_start_time) < 10;
@@ -140,7 +140,7 @@ private func FxIntHighlightInteractionCreateSelectorParticle(object target, effe
 {
 	// Failsafe.
 	if (!fx.dummy) return;
-	
+
 	// Draw a nice selector particle on item change.
 	var selector =
 	{
@@ -157,7 +157,7 @@ private func FxIntHighlightInteractionTimer(object target, proplist fx, int time
 {
 	if (!fx.dummy) return -1;
 	if (!fx.obj) return -1;
-	
+
 	if (fx.scheduled_selection_particle && time > 10)
 	{
 		EffectCall(nil, fx, "CreateSelectorParticle");
@@ -170,7 +170,7 @@ private func FxIntHighlightInteractionStop(object target, proplist fx, int reaso
 	if (temp) return;
 	if (fx.dummy) fx.dummy->RemoveObject();
 	if (!this) return;
-} 
+}
 
 private func FxIntHighlightInteractionOnExecute(object target, proplist fx)
 {
@@ -214,7 +214,7 @@ private func FindNextInteraction(proplist start_from, int x_dir)
 		index = i;
 		break;
 	}
-	
+
 	if (index != -1) // Previous item was found in the list.
 	{
 		var previous_interaction = interactions[index];
@@ -223,7 +223,7 @@ private func FindNextInteraction(proplist start_from, int x_dir)
 		var cycle_dir = x_dir;
 		var do_cycle_object = x_dir == 0;
 		if (do_cycle_object) cycle_dir = 1;
-		
+
 		var found = false;
 		for (var i = 1; i < len; ++i)
 		{
@@ -233,7 +233,7 @@ private func FindNextInteraction(proplist start_from, int x_dir)
 			if (do_cycle_object == is_same_object)
 			{
 				found = true;
-				
+
 				// When cycling to the left, make sure to arrive at the first interaction for that object (and not the last).
 				// Otherwise it's pretty unintuitive, why you sometimes grab and sometimes enter the catapult as the first interaction.
 				if (x_dir == -1)
@@ -256,7 +256,7 @@ private func FindNextInteraction(proplist start_from, int x_dir)
 				break;
 			}
 		}
-		
+
 		if (!found) index = -1;
 	}
 	else
@@ -271,7 +271,7 @@ private func FindNextInteraction(proplist start_from, int x_dir)
 			index = i;
 		}
 	}
-	
+
 	if (index == -1) return nil;
 	var next = interactions[index];
 	if (DeepEqual(next, start_from)) return nil;
@@ -283,7 +283,7 @@ private func BeginInteract()
 	this.control.interaction_hud_controller = this->GetHUDController();
 	this.control.is_interacting = true;
 	this.control.interaction_start_time = FrameCounter();
-	
+
 	// Force update the HUD controller, which is responsible for pre-selecting the "best" object.
 	this.control.interaction_hud_controller->UpdateInteractionObject();
 	// Then, iff the HUD shows an object, pre-select one.
@@ -310,7 +310,7 @@ private func EndInteract()
 		ExecuteInteraction(this.control.interaction_hud_controller->GetCurrentInteraction());
 		executed = true;
 	}
-	
+
 	var e = nil;
 	while (e = GetEffect("IntHighlightInteraction", this))
 	{
@@ -318,7 +318,7 @@ private func EndInteract()
 			EffectCall(this, e, "OnExecute");
 		RemoveEffect(nil, this, e);
 	}
-	
+
 	this.control.interaction_hud_controller->SetCurrentInteraction(nil);
 	this.control.interaction_hud_controller->EnableInteractionUpdating(true);
 }
@@ -357,7 +357,7 @@ func GetInteractableObjects(array sort)
 	// Get custom interactions from the clonk
 	// extra interactions are an array of proplists. proplists have to contain at least a function pointer "f", a description "desc" and an "icon" definition/object. Optional "front"-boolean for sorting in before/after other interactions.
 	var extra_interactions = this->~GetExtraInteractions() ?? []; // if not present, just use []. Less error prone than having multiple if(!foo).
-		
+
 	// all except structures only if outside
 	var can_only_use_container = !!Contained();
 
@@ -411,7 +411,7 @@ func GetInteractableObjects(array sort)
 					actiontype = ACTIONTYPE_SCRIPT
 				});
 		}
-		
+
 		// check whether further interactions are possible
 		// can be grabbed? (vehicles/chests..)
 		if (can_be_grabbed && !can_only_use_container)
@@ -423,7 +423,7 @@ func GetInteractableObjects(array sort)
 					continue;
 			// high priority if already grabbed
 			if (GetActionTarget() == interactable) priority = 0;
-			
+
 			PushBackInteraction(possible_interactions,
 				{
 					interaction_object = interactable,
@@ -433,7 +433,7 @@ func GetInteractableObjects(array sort)
 					actiontype = ACTIONTYPE_VEHICLE
 				});
 		}
-		
+
 		// Can be entered or exited?
 		var has_entrance = interactable->GetOCF() & OCF_Entrance;
 		var can_be_exited = has_entrance && uses_container;
@@ -469,7 +469,7 @@ func GetInteractableObjects(array sort)
 				});
 		}
 	}
-	
+
 	return possible_interactions;
 }
 
@@ -489,7 +489,7 @@ func ExecuteInteraction(proplist action_info)
 {
 	if (!action_info.interaction_object)
 		return;
-		
+
 	// object is a pushable vehicle
 	if(action_info.actiontype == ACTIONTYPE_VEHICLE)
 	{
@@ -508,7 +508,7 @@ func ExecuteInteraction(proplist action_info)
 				ObjectCommand("UnGrab");
 			else
 				ObjectCommand("Grab", action_info.interaction_object);
-				
+
 			return true;
 		}
 		// grab

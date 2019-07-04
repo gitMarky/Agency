@@ -1,6 +1,6 @@
 /*
 	Copied from Objects.ocd, because you cannot simply exchange one component.
-	
+
 	Will be adjusted as necessary.
 */
 
@@ -18,7 +18,7 @@
 /*
 	used properties
 	this.control.hotkeypressed: used to determine if an interaction has already been handled by a hotkey (space + 1-9)
-	
+
 	this.control.alt: alternate usage by right mouse button
 	this.control.mlastx: last x position of the cursor
 	this.control.mlasty: last y position of the cursor
@@ -77,7 +77,7 @@ protected func OnActionChanged(string oldaction)
 public func GetExtraInteractions()
 {
 	var functions = _inherited(...) ?? [];
-	
+
 	// flipping construction-preview
 	var fx = GetEffect("ControlConstructionPreview", this);
 	if (fx)
@@ -97,9 +97,9 @@ public func GetExtraInteractions()
 /* Main control function */
 public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, int status)
 {
-	if (!this) 
+	if (!this)
 		return false;
-	
+
 	// Contents menu
 	if (ctrl == CON_Contents && status == CONS_Down)
 	{
@@ -119,10 +119,10 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 		// the interaction menu calls SetMenu(this) in the clonk
 		// so after this call menu = the created menu
 		if(GetMenu())
-			GetMenu()->~Show();		
+			GetMenu()->~Show();
 		return true;
 	}
-	
+
 	/* aiming with mouse:
 	   The CON_Aim control is transformed into a use command. Con_Use if
 	   repeated does not bear the updated x,y coordinates, that's why this
@@ -136,14 +136,14 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 	{
 		if (this.control.alt) ctrl = CON_UseAlt;
 		else     ctrl = CON_Use;
-				
+
 		repeat = true;
 		status = CONS_Down;
 	}
 	// controls except a few reset a previously given command
 	else if (status != CONS_Moved)
 		SetCommand("None");
-	
+
 	/* aiming with analog pad or keys:
 	   This works completely different. There are CON_AimAxis* and CON_Aim*,
 	   both work about the same. A virtual cursor is created which moves in a
@@ -162,14 +162,14 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 		// in any case, CON_Aim* is called but it is only successful if the virtual cursor is aiming
 		return success && VirtualCursor()->IsAiming();
 	}
-	
+
 	// Simulate a mouse cursor for gamepads.
 	if (HasVirtualCursor())
 	{
 		x = this.control.mlastx;
 		y = this.control.mlasty;
 	}
-		
+
 	// save last mouse position:
 	// if the using has to be canceled, no information about the current x,y
 	// is available. Thus, the last x,y position needs to be saved
@@ -180,24 +180,24 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 	}
 
 	var proc = GetProcedure();
-	
+
 	// building, vehicle, mount, contents, menu control
 	var house = Contained();
 	var vehicle = GetActionTarget();
-	// the clonk can have an action target even though he lost his action. 
+	// the clonk can have an action target even though he lost his action.
 	// That's why the clonk may only interact with a vehicle if in an
 	// appropiate procedure:
 	if (proc != "ATTACH" && proc != "PUSH")
 		vehicle = nil;
-	
+
 	// menu
 	if (this.control.menu)
 	{
 		return Control2Menu(ctrl, x,y,strength, repeat, status);
 	}
-	
+
 	var contents = this->GetHandItem(0);
-	
+
 	// usage
 	var use = (ctrl == CON_Use || ctrl == CON_UseAlt);
 	if (use)
@@ -247,7 +247,7 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 				return true;
 		}
 	}
-	
+
 	// A click on throw can also just abort usage without having any other effects.
 	// todo: figure out if wise.
 	var currently_in_use = GetUsedObject() != nil;
@@ -256,23 +256,23 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 		CancelUse();
 		return true;
 	}
-	
+
 	// Throwing and dropping
 	// only if not in house, not grabbing a vehicle and an item selected
 	// only act on press, not release
 	if (ctrl == CON_Throw && !house && (!vehicle || proc == "ATTACH" || proc == "PUSH") && status == CONS_Down)
-	{		
+	{
 		if (contents)
 		{
 			// Object overloaded throw control?
 			// Call this before QueryRejectDeparture to allow alternate use of non-droppable objects
 			if (contents->~ControlThrow(this, x, y))
 				return true;
-			
+
 			// The object does not want to be dropped? Still handle command.
 			if (contents->~QueryRejectDeparture(this))
 				return true;
-			
+
 			// Quick-stash into grabbed vehicle?
 			if (vehicle && proc == "PUSH" && vehicle->~IsContainer())
 			{
@@ -282,7 +282,7 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 					Sound("Hits::SoftTouch*", false, nil, GetOwner());
 				return true;
 			}
-			
+
 			// just drop in certain situations
 			var only_drop = proc == "SCALE" || proc == "HANGLE" || proc == "SWIM";
 			// also drop if no throw would be possible anyway
@@ -305,10 +305,10 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 			}
 		}
 	}
-	
+
 	// Movement controls (defined in PlayerControl.c, partly overloaded here)
 	if (ctrl == CON_Left || ctrl == CON_Right || ctrl == CON_Up || ctrl == CON_Down || ctrl == CON_Jump)
-	{	
+	{
 		// forward to script...
 		if (house)
 		{
@@ -318,10 +318,10 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 		{
 			if (ControlMovement2Script(ctrl, x, y, strength, repeat, status, vehicle)) return true;
 		}
-	
+
 		return ObjectControlMovement(plr, ctrl, strength, status);
 	}
-	
+
 	// Do a roll on landing or when standing. This means that the CON_Down was not handled previously.
 	if (ctrl == CON_Roll && ComDir2XY(GetComDir())[0] != 0)
 	{
@@ -356,7 +356,7 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 		}
 		return true;
 	}
-	
+
 	// hotkeys action bar hotkeys
 	var hot = 0;
 	if (ctrl == CON_InteractionHotkey0) hot = 10;
@@ -369,7 +369,7 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 	if (ctrl == CON_InteractionHotkey7) hot = 7;
 	if (ctrl == CON_InteractionHotkey8) hot = 8;
 	if (ctrl == CON_InteractionHotkey9) hot = 9;
-	
+
 	if (hot > 0)
 	{
 		this.control.hotkeypressed = true;
@@ -377,7 +377,7 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 		this->~StopInteractionCheck(); // for GUI_Controller_ActionBar
 		return true;
 	}
-	
+
 	// Unhandled control
 	return _inherited(plr, ctrl, x, y, strength, repeat, status, ...);
 }
@@ -392,7 +392,7 @@ public func ObjectCommand(string command, object target, int tx, int ty, object 
 	else if (command == "Jump")
 		return this->~ControlJump();
 	// else standard command
-	else 
+	else
 	{
 		// Make sure to not recollect the item immediately on drops.
 		if (command == "Drop")
@@ -431,9 +431,9 @@ func ControlMovement2Script(int ctrl, int x, int y, int strength, bool repeat, i
 	if (ctrl == CON_Left || ctrl == CON_Right || ctrl == CON_Down || ctrl == CON_Up || ctrl == CON_Jump)
 	{
 		var control_string = "Control";
-		if (Contained() == obj) 
+		if (Contained() == obj)
 			control_string = "Contained";
-	
+
 		if (status == CONS_Up)
 		{
 			// if any movement key has been released, ControlStop is called
@@ -445,13 +445,13 @@ func ControlMovement2Script(int ctrl, int x, int y, int strength, bool repeat, i
 			// what about gamepad-deadzone?
 			if (strength != nil && strength < CON_Gamepad_Deadzone)
 				return true;
-			
+
 			// Control*
 			if (ctrl == CON_Left)  if (obj->Call(Format("~%sLeft",control_string),this))  return true;
 			if (ctrl == CON_Right) if (obj->Call(Format("~%sRight",control_string),this)) return true;
 			if (ctrl == CON_Up)    if (obj->Call(Format("~%sUp",control_string),this))    return true;
 			if (ctrl == CON_Down)  if (obj->Call(Format("~%sDown",control_string),this))  return true;
-			
+
 			// for attached (e.g. horse: also Jump command
 			if (GetProcedure() == "ATTACH")
 				if (ctrl == CON_Jump)  if (obj->Call("ControlJump",this)) return true;
@@ -514,7 +514,7 @@ func DoThrow(object obj, int angle)
 	// throw boost (throws stronger upwards than downwards)
 	if (iYDir < 0) iYDir = iYDir * 13/10;
 	if (iYDir > 0) iYDir = iYDir * 8/10;
-	
+
 	// add own velocity
 	iXDir += GetXDir(100)/2;
 	iYDir += GetYDir(100)/2;
@@ -523,7 +523,7 @@ func DoThrow(object obj, int angle)
 	obj->Exit(iX, iY, iR, 0, 0, iRDir);
 	obj->SetXDir(iXDir,100);
 	obj->SetYDir(iYDir,100);
-	
+
 	// Prevent hitting the thrower.
 	var block_blow = AddEffect("BlockBlowControl", this, 100, 3, this);
 	block_blow.obj = obj;
@@ -553,18 +553,18 @@ public func FxBlockBlowControlQueryCatchBlow(object target, effect fx, object ob
 /*
  Triggers a regular jump, that means that the speed in y direction
  is automatically decided, depending on the action of the clonk.
- 
+
  If you want to execute a jump with a certain speed, use ControlJumpExecute().
  */
 public func ControlJump()
 {
 	var ydir = 0;
-	
+
 	if (GetProcedure() == "WALK")
 	{
 		ydir = this.JumpSpeed;
 	}
-	
+
 	if (InLiquid() && !GBackSemiSolid(0, -5))
 	{
 		ydir = BoundBy(this.JumpSpeed * 3 / 5, 240, 380);
@@ -575,17 +575,17 @@ public func ControlJump()
 	{
 		ydir = this.JumpSpeed / 2;
 	}
-	
+
 	return ControlJumpExecute(ydir);
 }
 
 
 /*
  Additional function for actually triggering a jump directly.
- 
+
  The parameter ydir can be decided directly by the user,
  or you can use the clonk's jump speed by passing this.JumpSpeed
- 
+
  Returns false if the jump was not successful.
  */
 public func ControlJumpExecute(int ydir)

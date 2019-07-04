@@ -1,0 +1,33 @@
+[ControlDefs]
+
+	[ControlDef]
+	Identifier=Attack
+	GUIName=$CON_Interact$
+	GUIDesc=$CON_Interact_Desc$
+	Hold=1
+
+
+[ControlSets]
+
+	[ControlSet]
+	Name=*
+
+		[Assignment]
+		Key=Q
+		Control=Attack
+	
+		[Assignment]
+		Key=E
+		Control=Interact
+
+		[Assignment]
+		Key=I
+		Control=Contents
+
+		[Assignment]
+		Key=F
+		Control=PickUp
+
+		[Assignment]
+		Key=P
+		Control=Drop

@@ -1,5 +1,5 @@
 
-protected func InitializePlayer(int player)
+func InitializePlayer(int player)
 {
 	// Set zoom and move player to the middle of the scenario.
 	SetPlayerZoomByViewRange(player, LandscapeWidth(), nil, PLRZOOM_Direct);
@@ -9,3 +9,7 @@ protected func InitializePlayer(int player)
 	return true;
 }
 
+func Initialize()
+{
+	CreateObject(Character_Human, 150, 190)->SetDir(0);
+}

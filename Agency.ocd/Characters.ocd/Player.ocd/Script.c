@@ -1,4 +1,5 @@
 #include Character_Human
+#include Clonk_HandDisplay
 #include Character_Control
 #include Library_HUDAdapter
 #include Library_CarryHeavyControl

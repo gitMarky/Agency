@@ -1,0 +1,2 @@
+DescSilentAttack=Silent Attack
+DescEliminate=Eliminate

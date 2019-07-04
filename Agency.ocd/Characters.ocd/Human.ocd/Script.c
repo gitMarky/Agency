@@ -1,8 +1,9 @@
 #include Clonk_Generic
 #include Clonk_Animations
-#include Clonk_HandDisplay
 #include Clonk_Skins
 #include Clonk_Sounds
+
+#include Interaction_SilentAttack
 
 /* --- Properties --- */
 

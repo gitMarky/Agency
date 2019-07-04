@@ -1,6 +1,6 @@
 #include Character_Human
+#include Character_Control
 #include Library_HUDAdapter
-#include Library_ClonkControl
 #include Library_CarryHeavyControl
 #include Library_CanClimbLadder
 

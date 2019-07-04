@@ -26,3 +26,4 @@ Mark |  Description  |  Additional information
 Version 0.1.0
 ---------------------------------------------------------------------------------------------------
 + Added basic control scheme
++ Added basic ingame HUD

@@ -1,0 +1,18 @@
+﻿Change log
+---------------------------------------------------------------------------------------------------
+
+Legend:
+Uses semantic/behavioural versioning: major version, minor version, patch.
+- The patch number is incremented for minor changes and bug fixes which do not change the interface/behaviour.
+- The minor version is incremented for new, but backward-compatible features.
+- The major version is incremented for changes which are not backward-compatible. 
+
+Mark |  Description  |  Additional information
+----------------------------------------------
+-    |  Removal      |  Something was removed, changes the major version number.
++    |  Addition     |  Something was added, changes the minor version number.
+#    |  Patch        |  Something was fixed or improved, changes the patch version number.
+*    |  Change       |  Something was changed, but the behavior is backward-compatible.
+!    |  Change       |  Something was changed, but you will have to adjust code if you rely on it.
+
+---------------------------------------------------------------------------------------------------

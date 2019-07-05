@@ -5,17 +5,23 @@
 */
 
 
-public func IsInteractable(object by_agent)
+public func IsInteractable(){ return true; }
+
+public func GetInteractions(object by_agent)
 {
-	return _inherited(...) || CanBeSilentAttacked(by_agent);
+	var interactions = _inherited(by_agent, ...) ?? [];
+	PushBack(interactions, new Interaction
+	{
+		Target = this,
+		Name = "$DescSilentAttack$",
+		Desc = "$DescEliminate$",
+		Condition = this.CanBeSilentAttacked,
+		Execute = this.GetSilentAttacked,
+	});
+	return interactions;
 }
 
-public func GetInteractionMetaInfo(object by_agent, int index)
-{
-	return { Description = Format("%s: %s", "$DescSilentAttack$", "$DescEliminate$"), Selected = true };
-}
-
-public func Interact(object by_agent)
+func GetSilentAttacked(object by_agent)
 {
 	if (by_agent)
 	{

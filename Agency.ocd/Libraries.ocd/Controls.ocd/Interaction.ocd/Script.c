@@ -95,7 +95,7 @@ private func FxIntHighlightInteractionStart(object target, proplist fx, temp, pr
 	{
 		return;
 	}
-	fx.obj = interaction.interaction_object;
+	fx.obj = interaction.Target;
 	fx.interaction = interaction;
 	fx.interaction_help = target.control.interaction_hud_controller->GetInteractionHelp(interaction, target);
 
@@ -225,8 +225,8 @@ func SetNextInteraction(proplist to)
 func FindNextInteraction(proplist start_from, int x_dir)
 {
 	var starting_object = this;
-	if (start_from && start_from.interaction_object)
-		starting_object = start_from.interaction_object;
+	if (start_from && start_from.Target)
+		starting_object = start_from.Target;
 	var sort = Sort_Func("Library_ClonkInventoryControl_Sort_Priority", starting_object->GetX());
 	var interactions = GetInteractableObjects(sort);
 	var len = GetLength(interactions);
@@ -256,7 +256,7 @@ func FindNextInteraction(proplist start_from, int x_dir)
 		{
 			index = (index + cycle_dir) % len;
 			if (index < 0) index += len;
-			var is_same_object = interactions[index].interaction_object == previous_interaction.interaction_object;
+			var is_same_object = interactions[index].Target == previous_interaction.Target;
 			if (do_cycle_object == is_same_object)
 			{
 				found = true;
@@ -266,11 +266,11 @@ func FindNextInteraction(proplist start_from, int x_dir)
 				if (x_dir == -1)
 				{
 					// Fast forward to first interaction.
-					var target_object = interactions[index].interaction_object;
+					var target_object = interactions[index].Target;
 					// It's guaranteed that the interactions are not split over the array borders. So we can just search until the index is 0.
 					for (var current_index = index - 1; current_index >= 0; --current_index)
 					{
-						if (interactions[current_index].interaction_object == target_object)
+						if (interactions[current_index].Target == target_object)
 						{
 							index = current_index;
 						}
@@ -359,7 +359,7 @@ func PushBackInteraction(array to, proplist interaction)
 	var count = 0;
 	for (var other in to)
 	{
-		if (other.interaction_object && (other.interaction_object == interaction.interaction_object))
+		if (other.Target && (other.Target == interaction.Target))
 		{
 			count += 1;
 			if (count > 1 || other != interaction)
@@ -403,21 +403,15 @@ func GetInteractableObjects(array sort)
 		sort);
 	for (var interactable in interactables)
 	{
-		var interaction_count = interactable->~GetInteractionCount() ?? 1;
 		var uses_container = interactable == Contained();
-
 		if (can_use_surrounding || uses_container)
 		{
-			for (var index = 0; index < interaction_count; index++)
+			for (var interaction in interactable->~GetInteractions(this))
 			{
-				PushBackInteraction(possible_interactions,
-					{
-						interaction_object = interactable,
-						priority = 9,
-						interaction_index = index,
-						extra_data = nil,
-						actiontype = ACTIONTYPE_SCRIPT
-					});
+				if (HasInteraction(interaction))
+				{
+					PushBackInteraction(possible_interactions, interaction);
+				}
 			}
 		}
 	}
@@ -432,33 +426,37 @@ func GetInteractableObjectsCount()
 	var interaction_objects = [];
 	for (var interaction in interactions)
 	{
-		PushBack(interaction_objects, interaction.interaction_object);
+		PushBack(interaction_objects, interaction.Target);
 	}
 	RemoveDuplicates(interaction_objects);
 	return GetLength(interaction_objects);
 }
 
-// Executes interaction with an object. /action_info/ is a proplist as returned by GetInteractableObjects
-func ExecuteInteraction(proplist action_info)
+func HasInteraction(proplist interaction)
 {
-	if (!action_info.interaction_object)
+	if (interaction.Target && interaction.Execute)
 	{
-		return;
+		var condition = interaction.Condition;
+		return condition == nil || interaction.Target->Call(condition, this);
 	}
+	return  false;
+}
 
-	if (action_info.actiontype == ACTIONTYPE_SCRIPT)
+// Executes interaction with an object. /action_info/ is a proplist as returned by GetInteractableObjects
+func ExecuteInteraction(proplist interaction)
+{
+	if (HasInteraction(interaction))
 	{
-		if (action_info.interaction_object->~IsInteractable(this))
-		{
-			action_info.interaction_object->Interact(this, action_info.interaction_index);
-			return true;
-		}
-	}
-	else if (action_info.actiontype == ACTIONTYPE_EXTRA)
-	{
-		if (action_info.extra_data)
-		{
-			action_info.extra_data.Object->Call(action_info.extra_data.Fn, this);
-		}
+		interaction.Target->Call(interaction.Execute, this);
 	}
 }
+
+static const Interaction = new Global 
+{
+	Target = nil,
+	Name = nil,
+	Desc = nil,
+	Condition = nil,
+	Execute = nil,
+};
+

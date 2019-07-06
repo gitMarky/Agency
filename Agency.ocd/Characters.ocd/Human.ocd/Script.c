@@ -27,8 +27,31 @@ func Construction(object by)
 
 func Definition(id type)
 {
+	var actmap_prototype;
+	if (type.ActMap)
+	{
+		actmap_prototype = type;
+	}
+	else
+	{
+		actmap_prototype = Clonk;
+	}
+
 	type.PictureTransformation = Trans_Mul(Trans_Translate(0, 1000, 5000), Trans_Rotate(70, 0, 1, 0));
-	type.ActMap = { Prototype = Clonk.ActMap, };
+	type.ActMap = {
+		Prototype = actmap_prototype.ActMap,
+		Walk = {
+			Prototype = actmap_prototype.ActMap.Walk,
+			Speed = 50,
+			Accel = 4,
+			Decel = 16,
+		},
+		Run = {
+			Prototype = actmap_prototype.ActMap.Walk,
+			Accel = 12,
+			Decel = 16,
+		},
+	};
 
 	_inherited(type, ...);
 }

@@ -1,0 +1,2 @@
+Name=Axt
+Description=Werkzeug eines jeden Holzfällers. Benutze die Axt um einen Baum zu fällen.

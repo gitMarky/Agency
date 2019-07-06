@@ -27,3 +27,5 @@ Version 0.1.0
 ---------------------------------------------------------------------------------------------------
 + Added basic control scheme
 + Added basic ingame HUD
++ Added basic interactions: Silent attack
++ Added basic damage and melee weapon system

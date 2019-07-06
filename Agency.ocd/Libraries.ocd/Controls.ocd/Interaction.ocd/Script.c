@@ -408,10 +408,7 @@ func GetInteractableObjects(array sort)
 		{
 			for (var interaction in interactable->~GetInteractions(this))
 			{
-				if (HasInteraction(interaction))
-				{
-					PushBackInteraction(possible_interactions, interaction);
-				}
+				PushBackInteraction(possible_interactions, interaction);
 			}
 		}
 	}
@@ -436,8 +433,18 @@ func HasInteraction(proplist interaction)
 {
 	if (interaction.Target && interaction.Execute)
 	{
+		var current_frame = FrameCounter();
 		var condition = interaction.Condition;
-		return condition == nil || interaction.Target->Call(condition, this);
+		if (condition == nil)
+		{
+			interaction.IsAvailable = true; // Setting the property is preferred over returning immediately, so that the internal state is consistent
+		}
+		else if (current_frame > interaction.LastChecked)
+		{
+			interaction.LastChecked = current_frame;
+			interaction.IsAvailable = interaction.Target->Call(condition, this);
+		}
+		return interaction.IsAvailable;
 	}
 	return  false;
 }
@@ -453,10 +460,16 @@ func ExecuteInteraction(proplist interaction)
 
 static const Interaction = new Global 
 {
-	Target = nil,
-	Name = nil,
-	Desc = nil,
-	Condition = nil,
-	Execute = nil,
+	// These variables define the interaction
+	
+	Target = nil,     // object, target of the interaction
+	Name = nil,       // string, name of the interaction
+	Desc = nil,       // string, optional, description
+	Condition = nil,  // function, optional, the interaction is available only when this condition is true
+	Execute = nil,    // function, required, call this when executing the interaction
+	
+	// These variables are internal
+	IsAvailable = false, // bool, result of evaluation the condition
+	LastChecked = 0,     // int, frame when the condition was checked the last time
+	Display = nil,       // object, floating message object
 };
-

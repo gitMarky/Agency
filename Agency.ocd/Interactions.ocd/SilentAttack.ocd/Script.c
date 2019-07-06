@@ -66,7 +66,7 @@ func GetSilentAttackAction(object by_agent, proplist interaction)
 	if (item && item->~IsSilentAttackWeapon())
 	{
 		caller = item;
-		fn = item.DoSilentAttack;
+		fn = item.StartSilentAttack;
 
 		if (item->~CausesLethalDamage())
 		{

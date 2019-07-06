@@ -1,6 +1,7 @@
 
 #include Property_Damage_Lethal
 #include Property_Weapon_Melee
+#include Property_Weapon_SilentAttack
 
 /* --- Properties --- */
 

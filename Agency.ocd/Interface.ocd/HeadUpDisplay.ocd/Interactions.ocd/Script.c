@@ -78,11 +78,11 @@ public func UpdateInteractionObject()
 // Does hide the interaction
 func HideInteractions(proplist interaction)
 {
-	for (var display in interaction_display)
+	for (var existing in GetProperties(interaction_display))
 	{
-		if (display)
+		if (interaction_display[existing].Display)
 		{
-			display->RemoveObject();
+			interaction_display[existing].Display->RemoveObject();
 		}
 	}
 }

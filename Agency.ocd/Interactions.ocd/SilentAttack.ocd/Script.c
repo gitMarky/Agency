@@ -24,11 +24,7 @@ func GetSilentAttacked(object by_agent, proplist interaction)
 	if (by_agent)
 	{
 		var action = GetSilentAttackAction(by_agent, interaction);
-		if (action == Property_Damage_Lethal)
-		{
-			SetKiller(by_agent->GetOwner());
-			Kill();
-		}
+		action.Caller->Call(action.Action, this, by_agent);
 		return true;
 	}
 	return false;
@@ -39,19 +35,7 @@ func CanBeSilentAttacked(object by_agent, proplist interaction)
 	AssertNotNil(by_agent);
 	AssertNotNil(interaction);
 
-	var action = GetSilentAttackAction(by_agent, interaction);
-	if (action == Property_Damage_Lethal)
-	{
-		interaction.Desc = "$DescEliminate$";
-	}
-	else if (action == Property_Damage_Stunning)
-	{
-		interaction.Desc = "$DescPacify$";
-	}
-	else
-	{
-		interaction.Desc = "$DescSubdue$";
-	}
+	interaction.Desc = GetSilentAttackAction(by_agent, interaction).Desc;
 
 	if (GetAlive())
 	{
@@ -70,18 +54,35 @@ func GetSilentAttackAction(object by_agent, proplist interaction)
 {
 	AssertNotNil(by_agent);
 	AssertNotNil(interaction);
+	
+	// Default action
+	var description = "$DescSubdue$";
+	var damage = nil;
+	var caller = this;
+	var fn = nil;
 
+	// Override by item?
 	var item = by_agent->~GetHandItem();
-	if (item)
+	if (item && item->~IsSilentAttackWeapon())
 	{
+		caller = item;
+		fn = item.DoSilentAttack;
+
 		if (item->~CausesLethalDamage())
 		{
-			return Property_Damage_Lethal;
+			description = "$DescEliminate$";
+			damage = Property_Damage_Lethal;
 		}
 		else if (item->~CausesStunningDamage())
 		{
-			return Property_Damage_Stunning;
+			description = "$DescSubdue$";
+			damage = Property_Damage_Stunning;
 		}
 	}
-	return nil; // Default action
+	return {
+		Caller = caller,
+		Action = fn,
+		Desc = description,
+		Damage = damage
+	};
 }

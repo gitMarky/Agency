@@ -78,7 +78,7 @@ func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, i
 
 		if (dir != nil)
 		{
-			var item = FindNextInteraction(this.control.interaction_hud_controller->GetCurrentInteraction(), dir);
+			var item = FindNextInteraction(GetCurrentInteraction(), dir);
 			if (item)
 			{
 				SetNextInteraction(item);
@@ -217,7 +217,7 @@ func SetNextInteraction(proplist to)
 	while (e = GetEffect("IntHighlightInteraction", this))
 		RemoveEffect(nil, this, e);
 	// And set & mark new one.
-	this.control.interaction_hud_controller->SetCurrentInteraction(to);
+	SetCurrentInteraction(to);
 	var interaction_cnt = GetInteractableObjectsCount();
 	if (to)
 		AddEffect("IntHighlightInteraction", this, 1, 2, this, nil, to, interaction_cnt);
@@ -315,7 +315,7 @@ func BeginInteract()
 	// Force update the HUD controller, which is responsible for pre-selecting the "best" object.
 	this.control.interaction_hud_controller->UpdateInteractionObject();
 	// Then, iff the HUD shows an object, pre-select one.
-	var interaction = this.control.interaction_hud_controller->GetCurrentInteraction();
+	var interaction = GetCurrentInteraction();
 	if (interaction)
 		SetNextInteraction(interaction);
 	this.control.interaction_hud_controller->EnableInteractionUpdating(false);
@@ -324,7 +324,7 @@ func BeginInteract()
 // Stops interaction selection without executing the current selection.
 func AbortInteract()
 {
-	this.control.interaction_hud_controller->SetCurrentInteraction(nil);
+	SetCurrentInteraction(nil);
 	EndInteract();
 }
 
@@ -333,9 +333,9 @@ func EndInteract()
 	this.control.is_interacting = false;
 
 	var executed = false;
-	if (this.control.interaction_hud_controller->GetCurrentInteraction())
+	if (GetCurrentInteraction())
 	{
-		ExecuteInteraction(this.control.interaction_hud_controller->GetCurrentInteraction());
+		ExecuteInteraction(GetCurrentInteraction());
 		executed = true;
 	}
 
@@ -347,7 +347,7 @@ func EndInteract()
 		RemoveEffect(nil, this, e);
 	}
 
-	this.control.interaction_hud_controller->SetCurrentInteraction(nil);
+	SetCurrentInteraction(nil);
 	this.control.interaction_hud_controller->EnableInteractionUpdating(true);
 }
 
@@ -400,8 +400,21 @@ func GetInteractableObjects(array sort)
 			}
 		}
 	}
+	
+	// Very simple...
+	SetCurrentInteraction(possible_interactions[0]);
 
 	return possible_interactions;
+}
+
+func GetCurrentInteraction()
+{
+	return this.control.current_interaction;
+}
+
+func SetCurrentInteraction(proplist interaction)
+{
+	this.control.current_interaction = interaction;
 }
 
 func GetInteractables(array sort)
@@ -420,6 +433,7 @@ func GetInteractables(array sort)
 		               Find_Func("IsInteractable"),
 		               Find_NoContainer(),
 		               Find_Layer(GetObjectLayer()),
+		               Find_Exclude(this),
 		               sort);
 }
 

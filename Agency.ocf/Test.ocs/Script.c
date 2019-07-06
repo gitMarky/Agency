@@ -11,5 +11,6 @@ func InitializePlayer(int player)
 
 func Initialize()
 {
-	CreateObject(Character_Human, 150, 190)->SetDir(0);
+	var bot = CreateObject(Character_Human, 150, 190);
+	AI_Type_Civilian->AddAI(bot);
 }

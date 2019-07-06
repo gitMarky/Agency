@@ -1,0 +1,8 @@
+#include Agent_BaseFunctionality
+#include AI_HelperFunctions
+#include AgentExtension_Inventory_Clonk
+#include AgentExtension_Ready_Clonk
+#include AgentExtension_Senses_RangedVision
+#include AgentExtension_Movement_Generic
+#include AgentExtension_Movement_Clonk
+#include AgentExtension_Movement_Jump

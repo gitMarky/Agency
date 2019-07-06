@@ -70,8 +70,8 @@ func GetSilentAttackAction(object by_agent, proplist interaction)
 {
 	AssertNotNil(by_agent);
 	AssertNotNil(interaction);
-	
-	var item = by_agent->~GetActiveItem();
+
+	var item = by_agent->~GetHandItem();
 	if (item)
 	{
 		if (item->~CausesLethalDamage())

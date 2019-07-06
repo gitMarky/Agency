@@ -2,6 +2,7 @@
 #include Clonk_Animations
 #include Clonk_Skins
 #include Clonk_Sounds
+#include Library_Character_Intenvory
 
 #include Interaction_SilentAttack
 

@@ -5,7 +5,6 @@
 */
 
 // make use of other sub-libraries
-#include Library_Inventory
 #include Library_ClonkInventoryControl
 #include Character_Control_Interaction
 #include Library_ClonkMenuControl

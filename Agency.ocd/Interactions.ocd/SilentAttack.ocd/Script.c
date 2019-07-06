@@ -4,8 +4,7 @@
 	This character can be attacked silently, from behind.
 */
 
-
-public func IsInteractable(){ return true; }
+#include Property_Interactable
 
 public func GetInteractions(object by_agent)
 {

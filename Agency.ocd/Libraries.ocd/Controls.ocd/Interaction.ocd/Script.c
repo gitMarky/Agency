@@ -12,6 +12,7 @@
 	this.control.interaction_hud_controller: hud object that takes the callbacks. Updated when starting interaction.
 */
 
+local InteractionDistance = 12;
 
 func Construction()
 {
@@ -386,21 +387,8 @@ func GetInteractableObjects(array sort)
 	// All except structures only if outside
 	var can_use_surrounding = !Contained();
 
-	// Make sure that the Clonk's action target is always shown.
-	// You can push a lorry out of your bounding box and would, otherwise, then be unable to release it.
-	var main_criterion = Find_Distance(12);
-	var action_target = GetActionTarget();
-	if (action_target)
-	{
-		main_criterion = Find_Or(main_criterion, Find_InArray([action_target]));
-	}
-
 	// Add interactables (script interface)
-	var interactables = FindObjects(
-		main_criterion,
-		Find_Func("IsInteractable"),
-		Find_NoContainer(), Find_Layer(GetObjectLayer()),
-		sort);
+	var interactables = GetInteractables();
 	for (var interactable in interactables)
 	{
 		var uses_container = interactable == Contained();
@@ -414,6 +402,25 @@ func GetInteractableObjects(array sort)
 	}
 
 	return possible_interactions;
+}
+
+func GetInteractables(array sort)
+{
+	// TODO: Cache these, too
+	// Make sure that the Clonk's action target is always shown.
+	// You can push a lorry out of your bounding box and would, otherwise, then be unable to release it.
+	var main_criterion = Find_Distance(InteractionDistance);
+	var action_target = GetActionTarget();
+	if (action_target)
+	{
+		main_criterion = Find_Or(main_criterion, Find_InArray([action_target]));
+	}
+
+	return FindObjects(main_criterion,
+		               Find_Func("IsInteractable"),
+		               Find_NoContainer(),
+		               Find_Layer(GetObjectLayer()),
+		               sort);
 }
 
 // Returns the number of interactable objects, which is different from the total number of available interactions.
@@ -444,9 +451,10 @@ func HasInteraction(proplist interaction)
 			interaction.LastChecked = current_frame;
 			interaction.IsAvailable = interaction.Target->Call(condition, this);
 		}
-		return interaction.IsAvailable;
+		return interaction.IsAvailable                                 // Checking an individual object first is cheap
+		    && IsValueInArray(GetInteractables(), interaction.Target); // Only if that is even interactable, check that the generic conditions still hold
 	}
-	return  false;
+	return false;
 }
 
 // Executes interaction with an object. /action_info/ is a proplist as returned by GetInteractableObjects

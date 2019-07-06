@@ -449,7 +449,7 @@ func HasInteraction(proplist interaction)
 		else if (current_frame > interaction.LastChecked)
 		{
 			interaction.LastChecked = current_frame;
-			interaction.IsAvailable = interaction.Target->Call(condition, this);
+			interaction.IsAvailable = interaction.Target->Call(condition, this, interaction);
 		}
 		return interaction.IsAvailable                                 // Checking an individual object first is cheap
 		    && IsValueInArray(GetInteractables(), interaction.Target); // Only if that is even interactable, check that the generic conditions still hold
@@ -462,7 +462,7 @@ func ExecuteInteraction(proplist interaction)
 {
 	if (HasInteraction(interaction))
 	{
-		interaction.Target->Call(interaction.Execute, this);
+		interaction.Target->Call(interaction.Execute, this, interaction);
 	}
 }
 

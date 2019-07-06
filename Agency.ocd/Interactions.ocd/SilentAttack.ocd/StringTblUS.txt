@@ -1,2 +1,4 @@
 DescSilentAttack=Silent Attack
 DescEliminate=Eliminate
+DescPacify=Pacify
+DescSubdue=Subdue

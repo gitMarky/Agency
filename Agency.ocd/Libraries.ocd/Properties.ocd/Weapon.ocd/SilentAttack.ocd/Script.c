@@ -32,6 +32,7 @@ func StartSilentAttack(object victim, object attacker)
 	var attack = CreateEffect(FxSilentAttack, 1, 1);
 	if (attack)
 	{
+		attack.dir = attacker->GetDir();
 		attack.attacker = attacker;
 		attack.victim = victim;
 		attack.time_strike = (3235 - anim_start) * play_time / anim_length;	// Create an offset, so that the hit matches with the animation
@@ -52,11 +53,11 @@ func DoSilentAttack(object victim, object attacker)
 }
 
 
-func FinishSilentAttack(object victim, object attacker, int anim_nr)
+func FinishSilentAttack(object victim, object attacker, int anim_nr, int dir)
 {
 	if (victim)
 	{
-		victim->SetTurnForced(nil);	
+		victim->SetTurnForced(-1);	
 	}
 
 	if (attacker)
@@ -65,6 +66,9 @@ func FinishSilentAttack(object victim, object attacker, int anim_nr)
 		attacker->SetTurnType(0);
 		attacker->SetHandAction(false);
 		attacker->UpdateAttach();
+		attacker->SetXDir();
+		attacker->SetComDir(COMD_Stop);
+		attacker->SetDir(dir);
 		attacker->StopAnimation(anim_nr ?? attacker->GetRootAnimation(CLONK_ANIM_SLOT_Arms));
 		RemoveEffect(FxSilentAttack.Name, attacker);
 	}
@@ -123,10 +127,10 @@ local FxSilentAttack = new Effect
 
 	Stop = func ()
 	{
-		Target->FinishSilentAttack(this.victim, this.attacker, this.anim_nr);
 		if (this.constraint)
 		{
 			RemoveEffect(nil, nil, this.constraint);
 		}
+		Target->FinishSilentAttack(this.victim, this.attacker, this.anim_nr, this.dir);
 	},
 };

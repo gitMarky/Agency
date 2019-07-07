@@ -86,3 +86,10 @@ func SetSkin(int new_skin)
 		SetColor(GetPlayerColor(GetOwner()));
 	}
 }
+
+/* --- Status --- */
+
+func IsIncapacitated()
+{
+	return !GetAlive();
+}

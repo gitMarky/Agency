@@ -76,8 +76,12 @@ public func UpdateInteractionObject()
 }
 
 // Does hide the interaction
-func HideInteractions(proplist interaction)
+func HideInteractions()
 {
+	if (!interaction_display)
+	{
+		return;
+	}
 	for (var existing in GetProperties(interaction_display))
 	{
 		if (interaction_display[existing].Display)

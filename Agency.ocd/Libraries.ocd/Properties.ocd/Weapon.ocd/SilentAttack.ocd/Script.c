@@ -50,12 +50,16 @@ func DoSilentAttack(object victim, object attacker)
 
 func FinishSilentAttack(object attacker, int anim_nr)
 {
-	attacker->SetTurnType(0);
-	attacker->SetHandAction(false);
-	attacker->UpdateAttach();
-	attacker->StopAnimation(anim_nr ?? attacker->GetRootAnimation(CLONK_ANIM_SLOT_Arms));
-	RemoveEffect(FxSilentAttack.Name, attacker);
+	if (attacker)
+	{
+		attacker->SetTurnType(0);
+		attacker->SetHandAction(false);
+		attacker->UpdateAttach();
+		attacker->StopAnimation(anim_nr ?? attacker->GetRootAnimation(CLONK_ANIM_SLOT_Arms));
+		RemoveEffect(FxSilentAttack.Name, attacker);
+	}
 }
+
 
 local FxSilentAttack = new Effect
 {
@@ -63,16 +67,47 @@ local FxSilentAttack = new Effect
 
 	Timer = func (int time)
 	{
-		if (time >= this.time_strike && !this.struck)
+		// The attacker may be taken out himself, before he can finish
+		// the attack, so cancel if he cannot do anything anymore.
+		if (!this.attacker || this.attacker->~IsIncapacitated())
 		{
-			this.struck = true;
-			Target->DoSilentAttack(this.victim, this.attacker, this.x, this.y);
+			return FX_Execute_Kill;
 		}
+
+		// Do the actual strike?
+		CheckStrike(time);
 
 		if (time >= this.time_stop)
 		{
-			Target->FinishSilentAttack(this.attacker, this.anim_nr);
 			return FX_Execute_Kill;
 		}
-	}
+	},
+
+	CheckStrike = func (int time)
+	{
+		if (this.struck)
+		{
+			return;
+		}
+
+		// If the victim is already down, you should still finish
+		// the animation, but not strike the victim
+		if (!this.victim || this.victim->~IsIncapacitated())
+		{
+			this.struck = true;
+			return;
+		}
+
+		// Strike!
+		if (time >= this.time_strike)
+		{
+			this.struck = true;
+			Target->DoSilentAttack(this.victim, this.attacker);
+		}
+	},
+
+	Stop = func ()
+	{
+			Target->FinishSilentAttack(this.attacker, this.anim_nr);
+	},
 };

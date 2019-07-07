@@ -15,7 +15,7 @@ local BurnDownTime = 140;
 
 /* --- Display --- */
 
-func GetCarryMode(object clonk, bool idle)
+func GetCarryMode(object user, bool idle)
 {
 	if (idle)
 	{

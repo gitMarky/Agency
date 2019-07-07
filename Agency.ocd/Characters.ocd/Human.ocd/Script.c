@@ -3,6 +3,7 @@
 #include Clonk_Skins
 #include Clonk_Sounds
 #include Library_Character_Intenvory
+#include Library_Character_Pacification
 
 #include Interaction_SilentAttack
 
@@ -51,6 +52,15 @@ func Definition(id type)
 			Accel = 12,
 			Decel = 16,
 		},
+		Pacified = {
+			Prototype = Action,
+			Name = "Pacified",
+			Directions = 2,
+			Length = 1,
+			Delay = 0,
+			NextAction = "Hold",
+			ObjectDisabled = 1,
+		},
 	};
 
 	_inherited(type, ...);
@@ -87,9 +97,3 @@ func SetSkin(int new_skin)
 	}
 }
 
-/* --- Status --- */
-
-func IsIncapacitated()
-{
-	return !GetAlive();
-}

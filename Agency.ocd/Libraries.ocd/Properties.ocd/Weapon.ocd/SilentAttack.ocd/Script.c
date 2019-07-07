@@ -50,6 +50,11 @@ func DoSilentAttack(object victim, object attacker)
 		victim->SetKiller(attacker->GetOwner());
 		victim->Kill();
 	}
+	else if (this->~CausesStunningDamage())
+	{
+		victim->SetKiller(attacker->GetOwner());
+		victim->Pacify();
+	}
 }
 
 
@@ -83,7 +88,7 @@ local FxSilentAttack = new Effect
 	{
 		// The attacker may be taken out himself, before he can finish
 		// the attack, so cancel if he cannot do anything anymore.
-		if (!this.attacker || this.attacker->~IsIncapacitated())
+		if (!this.attacker || !this.attacker->GetAlive())
 		{
 			return FX_Execute_Kill;
 		}
@@ -111,7 +116,7 @@ local FxSilentAttack = new Effect
 		// but not strike the victim
 		// - if the victim is already down
 		// - if the constraint is gone (meaking victim is too far way) 
-		if (!this.victim || this.victim->~IsIncapacitated() || this.constraint == nil)
+		if (!this.victim || !this.victim->GetAlive() || this.constraint == nil)
 		{
 			this.struck = true;
 			return;

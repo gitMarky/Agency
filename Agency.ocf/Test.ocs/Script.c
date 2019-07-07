@@ -6,6 +6,7 @@ func InitializePlayer(int player)
 	GetCrew(player)->SetPosition(120, 190);
 	GetCrew(player)->MakeInvincible();
 	GetCrew(player)->CreateContents(Item_Axe);
+	GetCrew(player)->CreateContents(Item_Hammer);
 	return true;
 }
 

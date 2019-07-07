@@ -84,9 +84,9 @@ func HideInteractions()
 	}
 	for (var existing in GetProperties(interaction_display))
 	{
-		if (interaction_display[existing].Display)
+		if (interaction_display[existing])
 		{
-			interaction_display[existing].Display->RemoveObject();
+			interaction_display[existing]->RemoveObject();
 		}
 	}
 }

@@ -20,9 +20,12 @@ func StartSilentAttack(object victim, object attacker)
 	var anim_start = 1500;
 	var play_time = 50;
 
+	attacker->SetTurnForced(attacker->GetDir());
 	attacker->SetTurnType(1);
 	attacker->SetHandAction(1);
 	attacker->UpdateAttach();
+	
+	victim->SetTurnForced(victim->GetDir());
 
 	var anim_nr = attacker->PlayAnimation(anim_name, CLONK_ANIM_SLOT_Arms, Anim_Linear(anim_start, 0, anim_length, play_time, ANIM_Loop), Anim_Linear(0, 0, 1000, 10));
 
@@ -48,10 +51,16 @@ func DoSilentAttack(object victim, object attacker)
 }
 
 
-func FinishSilentAttack(object attacker, int anim_nr)
+func FinishSilentAttack(object victim, object attacker, int anim_nr)
 {
+	if (victim)
+	{
+		victim->SetTurnForced(nil);	
+	}
+
 	if (attacker)
 	{
+		attacker->SetTurnForced(nil);
 		attacker->SetTurnType(0);
 		attacker->SetHandAction(false);
 		attacker->UpdateAttach();
@@ -73,6 +82,9 @@ local FxSilentAttack = new Effect
 		{
 			return FX_Execute_Kill;
 		}
+
+		this.attacker->SetComDir(COMD_Stop);
+		!this.victim || this.victim->SetComDir(COMD_Stop);
 
 		// Do the actual strike?
 		CheckStrike(time);
@@ -108,6 +120,6 @@ local FxSilentAttack = new Effect
 
 	Stop = func ()
 	{
-			Target->FinishSilentAttack(this.attacker, this.anim_nr);
+		Target->FinishSilentAttack(this.victim, this.attacker, this.anim_nr);
 	},
 };

@@ -24,7 +24,7 @@ func StartSilentAttack(object victim, object attacker)
 	attacker->SetTurnType(1);
 	attacker->SetHandAction(1);
 	attacker->UpdateAttach();
-	
+
 	victim->SetTurnForced(victim->GetDir());
 
 	var anim_nr = attacker->PlayAnimation(anim_name, CLONK_ANIM_SLOT_Arms, Anim_Linear(anim_start, 0, anim_length, play_time, ANIM_Loop), Anim_Linear(0, 0, 1000, 10));
@@ -37,6 +37,7 @@ func StartSilentAttack(object victim, object attacker)
 		attack.time_strike = (3235 - anim_start) * play_time / anim_length;	// Create an offset, so that the hit matches with the animation
 		attack.time_stop = (anim_length + 0) * play_time / anim_length;
 		attack.anim = anim_nr;
+		attack.constraint = CreateEffect(FxSpringConstraint, 1, 1, 12, 15)->SetBodyA(attacker)->SetBodyB(victim, true);
 	}
 }
 
@@ -60,7 +61,7 @@ func FinishSilentAttack(object victim, object attacker, int anim_nr)
 
 	if (attacker)
 	{
-		attacker->SetTurnForced(nil);
+		attacker->SetTurnForced(-1);
 		attacker->SetTurnType(0);
 		attacker->SetHandAction(false);
 		attacker->UpdateAttach();
@@ -102,9 +103,11 @@ local FxSilentAttack = new Effect
 			return;
 		}
 
-		// If the victim is already down, you should still finish
-		// the animation, but not strike the victim
-		if (!this.victim || this.victim->~IsIncapacitated())
+		// You should still finish the animation, 
+		// but not strike the victim
+		// - if the victim is already down
+		// - if the constraint is gone (meaking victim is too far way) 
+		if (!this.victim || this.victim->~IsIncapacitated() || this.constraint == nil)
 		{
 			this.struck = true;
 			return;
@@ -121,5 +124,9 @@ local FxSilentAttack = new Effect
 	Stop = func ()
 	{
 		Target->FinishSilentAttack(this.victim, this.attacker, this.anim_nr);
+		if (this.constraint)
+		{
+			RemoveEffect(nil, nil, this.constraint);
+		}
 	},
 };

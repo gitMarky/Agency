@@ -14,10 +14,13 @@ func StartSilentAttack(object victim, object attacker)
 {
 	AssertNotNil(victim);
 	AssertNotNil(attacker);
+	
+	var animation = Strike_Animations.Pickaxe;
 
-	var anim_name = "StrikePickaxe";
-	var anim_length = attacker->GetAnimationLength(anim_name);
-	var anim_start = 1500;
+	var anim_name = animation->GetName();
+	var anim_length = animation->GetAnimationLength();
+	var anim_start = animation->GetAnimationStart();
+	var anim_ending = animation->GetAnimationEnding();
 	var play_time = 50;
 
 	attacker->SetTurnForced(attacker->GetDir());
@@ -26,8 +29,7 @@ func StartSilentAttack(object victim, object attacker)
 	attacker->UpdateAttach();
 
 	victim->SetTurnForced(victim->GetDir());
-
-	var anim_nr = attacker->PlayAnimation(anim_name, CLONK_ANIM_SLOT_Arms, Anim_Linear(anim_start, 0, anim_length, play_time, ANIM_Loop), Anim_Linear(0, 0, 1000, 10));
+	var anim_nr = attacker->PlayAnimation(anim_name, CLONK_ANIM_SLOT_Arms, Anim_Linear(anim_start, 0, anim_length, play_time, anim_ending), Anim_Linear(0, 0, 1000, 10));
 
 	var attack = CreateEffect(FxSilentAttack, 1, 1);
 	if (attack)
@@ -35,8 +37,8 @@ func StartSilentAttack(object victim, object attacker)
 		attack.dir = attacker->GetDir();
 		attack.attacker = attacker;
 		attack.victim = victim;
-		attack.time_strike = (3235 - anim_start) * play_time / anim_length;	// Create an offset, so that the hit matches with the animation
-		attack.time_stop = (anim_length + 0) * play_time / anim_length;
+		attack.time_strike = animation->GetStrikeTime(play_time); // Create an offset, so that the hit matches with the animation
+		attack.time_stop = play_time;
 		attack.anim = anim_nr;
 		attack.constraint = CreateEffect(FxSpringConstraint, 1, 1, 12, 15)->SetBodyA(attacker)->SetBodyB(victim, true);
 	}

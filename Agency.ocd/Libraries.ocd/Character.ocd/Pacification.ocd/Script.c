@@ -100,6 +100,9 @@ func OnPacified()
 	SetComDir(COMD_Stop);
 	// Add animation
 	CreateEffect(FxPacificationAnimation, 300, 1);
+
+	// Temp: Icon
+	Message("@{{Icon_Bubbles}}", this);
 }
 
 func OnWakeUp()
@@ -108,6 +111,9 @@ func OnWakeUp()
 	RemoveEffect(FxPacificationAnimation.Name, this);
 	// Get up!
 	this->~DoKneel();
+
+	// Temp: Remove icon
+	Message("", this);
 }
 
 

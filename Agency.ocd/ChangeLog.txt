@@ -30,3 +30,4 @@ Version 0.1.0
 + Added basic interactions: Silent attack
 + Added basic damage and melee weapon system
 + Added basic pacification system
++ Added basic throwable system

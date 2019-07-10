@@ -2,6 +2,7 @@
 #include Property_Damage_Lethal
 #include Property_Weapon_Melee
 #include Property_Weapon_SilentAttack
+#include Property_Weapon_Throwable
 
 /* --- Properties --- */
 
@@ -44,4 +45,9 @@ func GetCarryTransform(object user, bool idle)
 func GetCarrySpecial(object user)
 {
 	return "pos_hand2";
+}
+
+func GetThrowableHitTransform()
+{
+	return Trans_Mul(Trans_Translate(3000, 7000, 0), Trans_Rotate(-60, 0, 0, 1));
 }

@@ -4,6 +4,7 @@
 #include Clonk_Sounds
 #include Library_Character_Intenvory
 #include Library_Character_Pacification
+#include Library_Character_ThrowableTarget
 
 #include Interaction_SilentAttack
 

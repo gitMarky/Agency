@@ -38,3 +38,31 @@ func GetThrowableOffset(int precision)
 	return {X = 0, Y = -9 * precision, };
 }
 
+
+func GetThrowableHitEffects(object projectile)
+{
+	if (projectile->~IsThrowableWeapon())
+	{
+		if (projectile->~CausesLethalDamage())
+		{
+			StickThrowable(projectile);
+		}
+	}
+}
+
+func StickThrowable(object projectile)
+{
+	// TODO: More distinguished sticking? Hit from front or back makes a difference
+	if (projectile->GetMeshMaterial())
+	{
+		// Assume that we are being attached to a humanoid with Clonk skeleton, and that the item can be carried
+		var bone = projectile->~GetCarryBone() ?? "main";
+		projectile.property_weapon.throwable.mesh_nr = AttachMesh(projectile, "skeleton_head", bone, projectile->~GetThrowableHitTransform(), AM_DrawBefore);
+	}
+	if (projectile.Collectible)
+	{
+		projectile->Enter(this);
+	}
+}
+
+

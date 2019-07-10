@@ -19,6 +19,8 @@ func Construction(object by)
 		target = nil,    // object: aim at this target instead
 		precision = 100, // int:  angular precision
 		max_strength = 400, // int: max throw strength
+		throw_at = nil,     // effect: throw at specific target tracker
+		mesh_nr = nil,      // int: Attached mesh number
 	};
 	return _inherited(by, ...);
 }
@@ -307,7 +309,6 @@ local FxThrowAtTarget = new Effect
 
 				this.Victim->~GetThrowableHitEffects(this.Target);
 				this.Target->CauseDamage(this.Victim, this.Target->GetController());
-				this.Target->Enter(this.Victim);
 			}
 			else
 			{

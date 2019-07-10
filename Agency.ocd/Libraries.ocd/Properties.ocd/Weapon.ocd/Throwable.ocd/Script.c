@@ -304,8 +304,10 @@ local FxThrowAtTarget = new Effect
 				this.Target->SetPosition(victim_x / precision, victim_y / precision);
 				this.Target->SetXDir();
 				this.Target->SetYDir();
-				
-				// TODO: Hit effects
+
+				this.Victim->~GetThrowableHitEffects(this.Target);
+				this.Target->CauseDamage(this.Victim, this.Target->GetController());
+				this.Target->Enter(this.Victim);
 			}
 			else
 			{

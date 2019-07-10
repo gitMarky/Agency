@@ -47,16 +47,7 @@ func StartSilentAttack(object victim, object attacker)
 
 func DoSilentAttack(object victim, object attacker)
 {
-	if (this->~CausesLethalDamage())
-	{
-		victim->SetKiller(attacker->GetOwner());
-		victim->Kill();
-	}
-	else if (this->~CausesStunningDamage())
-	{
-		victim->SetKiller(attacker->GetOwner());
-		victim->Pacify();
-	}
+	CauseDamage(victim, attacker->GetController());
 }
 
 

@@ -47,7 +47,16 @@ func GetCarrySpecial(object user)
 	return "pos_hand2";
 }
 
-func GetThrowableHitTransform()
+func GetThrowableHitTransform(bool hit_from_behind)
 {
-	return Trans_Mul(Trans_Translate(3000, 7000, 0), Trans_Rotate(-60, 0, 0, 1));
+	var skewed = Trans_Rotate(RandomX(-20, 10), 0, 1, 0);
+	if (hit_from_behind)
+	{
+		return Trans_Mul(Trans_Translate(3000, 7000, 0), Trans_Rotate(-60, 0, 0, 1), skewed);
+	}
+	else
+	{
+		var mirrored = Trans_Scale(1000, -1000, 1000);
+		return Trans_Mul(Trans_Translate(1000, -6500, 0), Trans_Rotate(40, 0, 0, 1), skewed, mirrored);
+	}
 }

@@ -55,14 +55,18 @@ func StickThrowable(object projectile)
 	// TODO: More distinguished sticking? Hit from front or back makes a difference
 	if (projectile->GetMeshMaterial())
 	{
+		var projectile_dir = Sign(projectile->GetXDir());
+		var own_dir = this->~GetCalcDir();
+		var hit_from_behind = projectile_dir == own_dir // Looks away from the projectile?
+		                   || projectile_dir == 0;      // Be fair, and assume a projectile that comes directly from above as hitting from behind
+
 		// Assume that we are being attached to a humanoid with Clonk skeleton, and that the item can be carried
 		var bone = projectile->~GetCarryBone() ?? "main";
-		projectile.property_weapon.throwable.mesh_nr = AttachMesh(projectile, "skeleton_head", bone, projectile->~GetThrowableHitTransform(), AM_DrawBefore);
+		projectile.property_weapon.throwable.mesh_nr = AttachMesh(projectile, "skeleton_head", bone, projectile->~GetThrowableHitTransform(hit_from_behind), AM_DrawBefore);
 	}
 	if (projectile.Collectible)
 	{
 		projectile->Enter(this);
 	}
 }
-
 

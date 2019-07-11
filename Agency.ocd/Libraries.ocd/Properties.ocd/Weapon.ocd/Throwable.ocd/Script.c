@@ -35,6 +35,7 @@ func SetThrowableAiming(bool is_aiming)
 	property_weapon.throwable.angle = 0;
 	property_weapon.throwable.strength = 0;
 	property_weapon.throwable.target = nil;
+	property_weapon.throwable.throw_at = nil;
 }
 
 /* --- Usage --- */
@@ -145,11 +146,10 @@ func ThrowWeapon(object user, int x, int y, bool do_throw)
 		var precision_vdefault = 10;
 		xdir = precision_vdefault * xdir / precision_velocity;
 		ydir = precision_vdefault * ydir / precision_velocity;
-		Trajectory->Create(user, exit_x, exit_y, xdir, ydir, nil, nil, true);
 
 		property_weapon.throwable.angle = angle;
 		property_weapon.throwable.strength = strength;
-		// Reset the target if there is no selection effect		
+		// Reset the target if there is no selection effect
 		if (!property_weapon.throwable.throw_at)
 		{
 			property_weapon.throwable.target = nil;
@@ -159,6 +159,15 @@ func ThrowWeapon(object user, int x, int y, bool do_throw)
 		{
 			property_weapon.throwable.target = target;
 			property_weapon.throwable.throw_at = this->CreateEffect(FxThrowAtTarget, 1, 1, target);
+		}
+		// Trajectory should be displayed only if there is no marker on a target	
+		if (property_weapon.throwable.throw_at)
+		{
+			Trajectory->Remove(user);
+		}
+		else
+		{
+			Trajectory->Create(user, exit_x, exit_y, xdir, ydir, nil, nil, true);
 		}
 	}
 }
@@ -291,24 +300,25 @@ local FxThrowAtTarget = new Effect
 			return FX_Execute_Kill;
 		}
 		this.Active = true;
-	
+
 		var projectile_x = this.Target->GetX(precision);
 		var projectile_y = this.Target->GetY(precision);
 		var target_x = victim_x - projectile_x;
 		var target_y = victim_y - projectile_y;
-		
+
 		// Hit now (this frame)?
 		if (Distance(target_x, target_y) <= this.Velocity)
 		{
 			if (PathFree(projectile_x / precision, projectile_y / precision, victim_x / precision, victim_y / precision))
 			{
-				// Teleport to the position
+				// Teleport to the position, cause damage
 				this.Target->SetPosition(victim_x / precision, victim_y / precision);
+				this.Target->CauseDamage(this.Victim, this.Target->GetController());
+				// Do the effects later, so that it can e.g. enter a dead target
+				this.Victim->~GetThrowableHitEffects(this.Target);
+				// Reset velocity last, so that it can be used as a directional marker during hit effects
 				this.Target->SetXDir();
 				this.Target->SetYDir();
-
-				this.Victim->~GetThrowableHitEffects(this.Target);
-				this.Target->CauseDamage(this.Victim, this.Target->GetController());
 			}
 			else
 			{

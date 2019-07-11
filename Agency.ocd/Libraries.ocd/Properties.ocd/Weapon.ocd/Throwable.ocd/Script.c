@@ -299,7 +299,6 @@ local FxThrowAtTarget = new Effect
 		{
 			return FX_Execute_Kill;
 		}
-		this.Active = true;
 
 		var projectile_x = this.Target->GetX(precision);
 		var projectile_y = this.Target->GetY(precision);
@@ -311,6 +310,9 @@ local FxThrowAtTarget = new Effect
 		{
 			if (PathFree(projectile_x / precision, projectile_y / precision, victim_x / precision, victim_y / precision))
 			{
+				// Add a basic velocity if you just exited the thrower
+				if (!this.Active)
+				this.Target->SetXDir(target_x, precision);
 				// Teleport to the position, cause damage
 				this.Target->SetPosition(victim_x / precision, victim_y / precision);
 				this.Target->CauseDamage(this.Victim, this.Target->GetController());
@@ -328,6 +330,7 @@ local FxThrowAtTarget = new Effect
 		}
 		else
 		{
+			this.Active = true;
 			// Adjust target position by velocity
 			target_x += this.Victim->GetXDir(precision);
 			target_y += this.Victim->GetYDir(precision);

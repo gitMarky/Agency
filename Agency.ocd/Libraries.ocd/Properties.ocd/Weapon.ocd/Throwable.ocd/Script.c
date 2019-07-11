@@ -14,13 +14,11 @@ func Construction(object by)
 	property_weapon.throwable =
 	{
 		aiming = false,  // bool: aiming or not?
-		angle = 0,       // int:  the aim angle, in precision
-		strength = 0,    // int:  the strength
 		target = nil,    // object: aim at this target instead
 		precision = 100, // int:  angular precision
 		max_strength = 400, // int: max throw strength
 		throw_at = nil,     // effect: throw at specific target tracker
-		mesh_nr = nil,      // int: Attached mesh number
+		procedure = nil,    // effect: throwing animation
 	};
 	return _inherited(by, ...);
 }
@@ -32,10 +30,9 @@ func SetThrowableAiming(bool is_aiming)
 	property_weapon.throwable.aiming = is_aiming;
 	// Reset the properties in either case
 	// This ensures a clean state :)
-	property_weapon.throwable.angle = 0;
-	property_weapon.throwable.strength = 0;
 	property_weapon.throwable.target = nil;
 	property_weapon.throwable.throw_at = nil;
+	property_weapon.throwable.procedure = nil;
 }
 
 /* --- Usage --- */
@@ -46,7 +43,8 @@ func HoldingEnabled() { return true; }
 func RejectUse(object user)
 {
 	var can_use = user->~IsWalking();
-	return !can_use;
+	var is_throwing = !!property_weapon.throwable.procedure;
+	return !can_use || is_throwing;
 }
 
 
@@ -130,7 +128,14 @@ func ThrowAimAt(object user, int x, int y, bool confirm_throw)
 
 	if (confirm_throw) // Actually throw the object
 	{
-		property_weapon.throwable.procedure = CreateEffect(FxThrowAnimation, 1, 1, user)->SetData(exit_x, exit_y, xdir, ydir, precision_velocity);
+		var delay = 20;
+		var throw = 650;
+		if (property_weapon.throwable.throw_at)
+		{
+			delay = 30;
+			throw = 900;
+		}
+		property_weapon.throwable.procedure = CreateEffect(FxThrowAnimation, 1, 1, user, delay, throw)->SetData(exit_x, exit_y, xdir, ydir, precision_velocity);
 	}
 	else // Show and update trajectory preview
 	{
@@ -138,8 +143,6 @@ func ThrowAimAt(object user, int x, int y, bool confirm_throw)
 		xdir = precision_vdefault * xdir / precision_velocity;
 		ydir = precision_vdefault * ydir / precision_velocity;
 
-		property_weapon.throwable.angle = angle;
-		property_weapon.throwable.strength = strength;
 		// Reset the target if there is no selection effect
 		if (!property_weapon.throwable.throw_at)
 		{
@@ -196,7 +199,7 @@ local FxThrowAnimation = new Effect {
 		return this;
 	},
 
-	Start = func (int temporary, object user)
+	Start = func (int temporary, object user, int play_time, int throw)
 	{
 		if (temporary)
 		{
@@ -204,7 +207,6 @@ local FxThrowAnimation = new Effect {
 		}
 		
 		var animation = Strike_Animations.Throw;
-		var play_time = 16;
 
 		this.user = user;
 		this.anim_nr = user->PlayAnimation(animation->GetName(), 
@@ -212,7 +214,7 @@ local FxThrowAnimation = new Effect {
 		                                   Anim_Linear(animation->GetAnimationStart(), 0, animation->GetAnimationLength(), play_time, animation->GetAnimationEnding()),
 		                                   Anim_Linear(0, 0, 1000, 10));
 		                                   
-		this.time_throw = animation->GetStrikeTime(play_time);
+		this.time_throw = throw * play_time / animation->GetAnimationLength();
 		this.time_stop = play_time;
 	},
 

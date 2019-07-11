@@ -48,4 +48,13 @@ static const Strike_Animations = {
 		Strike = 3235,
 		Ending = ANIM_Loop,
 	},
+	Throw = {
+		Prototype = Strike_Animation,
+		Source = Clonk,
+		Animation = "ThrowArms",
+		Length = 1500,
+		Start = 0,
+		Strike = 650,
+		Ending = ANIM_Remove,
+	},
 };

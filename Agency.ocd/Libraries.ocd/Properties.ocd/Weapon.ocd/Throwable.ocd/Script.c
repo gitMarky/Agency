@@ -59,7 +59,7 @@ func ControlUseAltStart(object user, int x, int y)
 
 func ControlUseAltHolding(object user, int x, int y)
 {
-	ThrowWeapon(user, x, y, false);
+	ThrowAimAt(user, x, y, false);
 	return true;
 }
 
@@ -82,14 +82,18 @@ func ControlUseStart(object user, int x, int y)
 {
 	if (property_weapon.throwable.aiming)
 	{
-		ThrowWeapon(user, x, y, true);
+		ThrowAimAt(user, x, y, true);
 		ControlUseAltStop(user, x, y);
 		return true;
 	}
 	return false;
 }
 
-func ThrowWeapon(object user, int x, int y, bool do_throw)
+
+/* --- Throwing logic --- */
+
+
+func ThrowAimAt(object user, int x, int y, bool confirm_throw)
 {
 	SetController(user->GetOwner());
 
@@ -124,22 +128,9 @@ func ThrowWeapon(object user, int x, int y, bool do_throw)
 	// TODO: Limit throwing distance somewhere
 	var target = FindTarget(user, user->GetX() + x, user->GetY() + y);
 
-	if (do_throw) // Actually throw the object
+	if (confirm_throw) // Actually throw the object
 	{
-		// Support for stackable objects
-		var projectile = this->~TakeObject() ?? this;
-		projectile->Exit();
-		projectile->SetPosition(exit_x, exit_y);
-		projectile->SetR(Random(360));
-		projectile->SetRDir(RandomX(-30, 30));
-		if (property_weapon.throwable.throw_at) // TODO: Re-assign is not possible, has to switch the logic?
-		{
-			//property_weapon.throwable.throw_at.Target = projectile;
-		}
-		else
-		{
-			projectile->SetSpeed(xdir, ydir, precision_velocity);
-		}
+		property_weapon.throwable.procedure = CreateEffect(FxThrowAnimation, 1, 1, user)->SetData(exit_x, exit_y, xdir, ydir, precision_velocity);
 	}
 	else // Show and update trajectory preview
 	{
@@ -172,51 +163,82 @@ func ThrowWeapon(object user, int x, int y, bool do_throw)
 	}
 }
 
-local FxThrowArc = new Effect {
-	Name = "ThrowArc",
-	
-	Start = func (int temporary, object user, int angle, int strength)
+
+func ThrowWeapon(int exit_x, int exit_y, int xdir, int ydir, int precision_velocity)
+{
+	// Support for stackable objects
+	var projectile = this->~TakeObject() ?? this;
+	projectile->Exit();
+	projectile->SetPosition(exit_x, exit_y);
+	projectile->SetR(Random(360));
+	projectile->SetRDir(RandomX(-30, 30));
+	projectile->SetController(this->GetController());
+	if (property_weapon.throwable.throw_at) // TODO: Re-assign is not possible, has to switch the logic?
+	{
+		//property_weapon.throwable.throw_at.Target = projectile;
+	}
+	else
+	{
+		projectile->SetSpeed(xdir, ydir, precision_velocity);
+	}
+}
+
+local FxThrowAnimation = new Effect {
+	Name = "ThrowAnimation",
+
+	SetData = func (int exit_x, int exit_y, int xdir, int ydir, int precision_velocity)
+	{
+		this.exit_x = exit_x;
+		this.exit_y = exit_y;
+		this.xdir = xdir;
+		this.ydir = ydir;
+		this.precision_velocity = precision_velocity;
+		return this;
+	},
+
+	Start = func (int temporary, object user)
 	{
 		if (temporary)
 		{
 			return 0;
 		}
-		var animation = "ThrowArms";
-		var delay = 16;
-		this.anim_nr = user->~PlayAnimation("ThrowArms", CLONK_ANIM_SLOT_Arms, Anim_Linear(0, 0, user->~GetAnimationLength("ThrowArms"), delay));
+		
+		var animation = Strike_Animations.Throw;
+		var play_time = 16;
+
+		this.user = user;
+		this.anim_nr = user->PlayAnimation(animation->GetName(), 
+		                                   CLONK_ANIM_SLOT_Arms,
+		                                   Anim_Linear(animation->GetAnimationStart(), 0, animation->GetAnimationLength(), play_time, animation->GetAnimationEnding()),
+		                                   Anim_Linear(0, 0, 1000, 10));
+		                                   
+		this.time_throw = animation->GetStrikeTime(play_time);
+		this.time_stop = play_time;
+	},
+
+	Stop = func (int reason, bool temporary)
+	{
+		if (!temporary)
+		{
+			if (this.user)
+			{
+				this.user->StopAnimation(this.anim_nr);
+			}
+		}
+	},
+
+	Timer = func (int time)
+	{
+		if (time == this.time_throw)
+		{
+			this.Target->ThrowWeapon(this.exit_x, this.exit_y, this.xdir, this.ydir, this.precision_velocity);
+		}
+		if (time >= this.time_stop)
+		{
+			return FX_Execute_Kill;
+		}
 	},
 };
-
-
-/*
-func FxIntThrowStart(target, effect, tmp, targetobj, throwAngle)
-{
-	var iThrowTime = 16;
-	if(tmp) return;
-	;
-	effect.targetobj = targetobj;
-	effect.angle = throwAngle;
-}
-
-func FxIntThrowTimer(target, effect, time)
-{
-	// cancel throw if object does not exist anymore
-	if(!effect.targetobj)
-		return -1;
-	var iThrowTime = 16;
-	if(time == iThrowTime*8/15)
-		DoThrow(effect.targetobj, effect.angle);
-	if(time >= iThrowTime)
-		return -1;
-}
-
-func FxIntThrowStop(target, effect, reason, tmp)
-{
-	if(tmp) return;
-	StopAnimation(GetRootAnimation(10));
-	this->~SetHandAction(0);
-}
-*/
 
 
 func FindTarget(object user, int x, int y)

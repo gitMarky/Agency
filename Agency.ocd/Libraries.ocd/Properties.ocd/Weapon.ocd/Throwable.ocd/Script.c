@@ -31,8 +31,12 @@ func SetThrowableAiming(bool is_aiming)
 	// Reset the properties in either case
 	// This ensures a clean state :)
 	property_weapon.throwable.target = nil;
-	property_weapon.throwable.throw_at = nil;
 	property_weapon.throwable.procedure = nil;
+	// Stop the aim effect, unless you are thrown already
+	if (property_weapon.throwable.throw_at && !property_weapon.throwable.throw_at.Launched)
+	{
+		RemoveEffect(nil, nil, property_weapon.throwable.throw_at);
+	}
 }
 
 /* --- Usage --- */
@@ -133,6 +137,7 @@ func ThrowAimAt(object user, int x, int y, bool confirm_throw)
 		var throw = 650;
 		if (property_weapon.throwable.throw_at)
 		{
+			property_weapon.throwable.throw_at.Launched = true;
 			delay = 30;
 			throw = 900;
 		}
@@ -283,6 +288,7 @@ local FxThrowAtTarget = new Effect
 {
 	Range = 150,
 	Velocity = 150,
+	Launched = false,
 	Active = false,
 
 	Start = func (int temporary, object target)
@@ -308,7 +314,13 @@ local FxThrowAtTarget = new Effect
 	
 	Timer = func (int time)
 	{
+		// No victim or too far away?
 		if (!this.Victim || ObjectDistance(this.Target, this.Victim) > this.Range)
+		{
+			return FX_Execute_Kill;
+		}
+		// Not the active item anymore?
+		if (this.Target->Contained() && this.Target->Contained()->~GetHandItem() != this.Target)
 		{
 			return FX_Execute_Kill;
 		}
@@ -412,10 +424,10 @@ local FxThrowAtTarget = new Effect
 		if (this.Selector)
 		{
 			// Draw a nice selector particle on item change.
-			var size = 15;
+			var size = 18;
 			var selector =
 			{
-				Size = PV_Step(30, -1, 1, size),
+				Size = PV_Step(6, 1, 3, size),
 				Attach = ATTACH_Front | ATTACH_MoveRelative,
 				Rotation = PV_Step(1, PV_Random(0, 360), 1),
 				Alpha = 200,

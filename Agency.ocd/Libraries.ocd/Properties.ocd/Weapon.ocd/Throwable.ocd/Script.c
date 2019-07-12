@@ -16,7 +16,7 @@ func Construction(object by)
 		aiming = false,  // bool: aiming or not?
 		target = nil,    // object: aim at this target instead
 		precision = 100, // int:  angular precision
-		max_strength = 400, // int: max throw strength
+		max_strength = 450, // int: max throw strength
 		throw_at = nil,     // effect: throw at specific target tracker
 		procedure = nil,    // effect: throwing animation
 	};
@@ -102,6 +102,7 @@ func ThrowAimAt(object user, int x, int y, bool confirm_throw)
 	//var angle_mod = 45 * precision * user->GetCalcDir(); // Aim 45 degree upwards by default
 	var angle_mod = 0;
 	var angle = Abs(Normalize(angle_aim - angle_mod, -180 * precision, precision));
+	angle /= 3; // Aim 30° if you want to throw forward :O
 	angle = Max(angle, 10 * precision);
 	angle *= user->GetCalcDir();
 	var distance = Distance(0, 0, x, y);
@@ -158,6 +159,13 @@ func ThrowAimAt(object user, int x, int y, bool confirm_throw)
 		if (property_weapon.throwable.throw_at)
 		{
 			Trajectory->Remove(user);
+			// Remove the aim effect if you aim too far away
+			var angle_t = Angle(GetX(), GetY(), property_weapon.throwable.target->GetX(), property_weapon.throwable.target->GetY(), precision);
+			var angle_diff = Abs(Normalize(angle_t - angle_aim, -180 * precision, precision));
+			if (angle_diff > 20 * precision)
+			{
+				RemoveEffect(nil, nil, property_weapon.throwable.throw_at);
+			}
 		}
 		else
 		{
@@ -255,6 +263,11 @@ func FindTarget(object user, int x, int y)
 	var max_priority = 0;
 	for (var target in targets)
 	{
+		// You need to have a clear line to the target
+		if (!PathFree(user->GetX(), user->GetY(), target->GetX(), target->GetY()))
+		{
+			continue;
+		}
 		var priority = target->~GetThrowablePriority(this);
 		if (found == nil || priority > max_priority)
 		{
@@ -402,7 +415,7 @@ local FxThrowAtTarget = new Effect
 			var size = 15;
 			var selector =
 			{
-				Size = PV_Step(10, 2, 1, size),
+				Size = PV_Step(30, -1, 1, size),
 				Attach = ATTACH_Front | ATTACH_MoveRelative,
 				Rotation = PV_Step(1, PV_Random(0, 360), 1),
 				Alpha = 200,

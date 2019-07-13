@@ -85,7 +85,7 @@ func DeathEffects(int killed_by)
 func QueryCatchBlow(object by)
 {
 	var block = "BlockBlowRebound";
-	if (!GetEffect(block, by))
+	if (this->GetAlive() && !GetEffect(block, by))
 	{
 		// Calculate an angle for bouncing off
 		var prec_a = 1000;
@@ -98,7 +98,6 @@ func QueryCatchBlow(object by)
 		// Prevent it from bouncing off again, launch it
 		AddEffect(block, by, 300, 10);
 		by->SetVelocity(rebound_angle, velocity / 3, prec_a, prec_v);
-		
 	}
 	return true;
 }

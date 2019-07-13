@@ -3,6 +3,7 @@
 #include Clonk_Skins
 #include Clonk_Sounds
 #include Library_Character_Intenvory
+#include Library_Character_Control // Required for now, or else the inventory will not work correctly..........
 #include Library_Character_Pacification
 #include Library_Character_ThrowableTarget
 
@@ -78,6 +79,28 @@ func DeathEffects(int killed_by)
 	{
 		this->PlaySkinSound("Die*");
 	}
+}
+
+// Never get hit by objects, but let them bounce off of you
+func QueryCatchBlow(object by)
+{
+	var block = "BlockBlowRebound";
+	if (!GetEffect(block, by))
+	{
+		// Calculate an angle for bouncing off
+		var prec_a = 1000;
+		var prec_p = 10;
+		var prec_v = 100;
+		var impact_angle = Normalize(Angle(0, 0, by->GetXDir(), by->GetYDir(), prec_a), -180 * prec_a, prec_a);
+		var axis_angle = Normalize(Angle(GetX(prec_p), GetY(prec_p), by->GetX(prec_p), by->GetY(prec_p), prec_a), -180 * prec_a, prec_a);
+		var rebound_angle = Normalize(180 * prec_a + 2 * axis_angle - impact_angle, -180 * prec_a, prec_a);
+		var velocity = by->GetSpeed(prec_v);
+		// Prevent it from bouncing off again, launch it
+		AddEffect(block, by, 300, 10);
+		by->SetVelocity(rebound_angle, velocity / 3, prec_a, prec_v);
+		
+	}
+	return true;
 }
 
 /* --- Skin support --- */

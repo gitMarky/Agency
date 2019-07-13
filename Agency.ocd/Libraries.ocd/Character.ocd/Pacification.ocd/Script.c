@@ -26,7 +26,7 @@ func Pacify()
 	var pacified = IsPacified();
 	if (pacified == nil)
 	{
-		CreateEffect(FxPacification, 1);
+		CreateEffect(FxPacification, 1, 6);
 		return true;
 	}
 	return false;
@@ -70,6 +70,8 @@ local FxPacification = new Effect
 		if (!temporary)
 		{
 			this.Target->~OnPacified();
+			this.Particle = -1;
+			this.Particles = 10;
 		}
 		return FX_OK;
 	},
@@ -90,6 +92,25 @@ local FxPacification = new Effect
 		}
 		this.Target->~OnWakeUp();
 	},
+	
+	Timer = func (int time)
+	{
+		if (time < 30)
+		{
+			return FX_OK;
+		}
+		this.Particle = (this.Particle + 1) % this.Particles;
+		var angle = 36 * this.Particle;
+		var radius = 5;
+		var lifetime = (this.Interval * this.Particles + 2) / 2;
+		SpawnParticle(angle - 90, radius, lifetime);
+		SpawnParticle(angle + 90, radius, lifetime);
+	},
+
+	SpawnParticle = func (int angle, int radius, int lifetime)
+	{
+		this.Target->CreateParticle("SphereSpark", Sin(-angle, radius), Cos(-angle, radius) - 3, 0, 0, lifetime, {Size = 2, Alpha = PV_Linear(255, 0), Attach = ATTACH_Front | ATTACH_MoveRelative});
+	},
 };
 
 
@@ -100,9 +121,6 @@ func OnPacified()
 	SetComDir(COMD_Stop);
 	// Add animation
 	CreateEffect(FxPacificationAnimation, 300, 1);
-
-	// Temp: Icon
-	Message("@{{Icon_Bubbles}}", this);
 }
 
 func OnWakeUp()

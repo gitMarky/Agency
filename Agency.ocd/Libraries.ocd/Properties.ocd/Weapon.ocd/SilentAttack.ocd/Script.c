@@ -15,21 +15,41 @@ func StartSilentAttack(object victim, object attacker)
 	AssertNotNil(victim);
 	AssertNotNil(attacker);
 	
-	var animation = Strike_Animations.Pickaxe;
+	var silent_attack = this->~GetSilentAttackAnimation() ??
+	{
+		Animation = Strike_Animations.Pickaxe,
+		Direction = nil,
+		TurnType = 1,
+		HandAction = 1,
+		Delay = 50,
+		DistMin = 12,
+		DistMax = 15
+	};
 
-	var anim_name = animation->GetName();
-	var anim_length = animation->GetAnimationLength();
+	var animation = silent_attack.Animation;
+
+	var anim_name = animation->GetName(silent_attack.Direction);
 	var anim_start = animation->GetAnimationStart();
+	var anim_begin = animation->GetAnimationBegin();
+	var anim_end = animation->GetAnimationEnd();
 	var anim_ending = animation->GetAnimationEnding();
-	var play_time = 50;
+	var play_time = silent_attack.Delay ?? 30;
+	var distance_min = silent_attack.DistMin ?? 10;
+	var distance_max = silent_attack.DistMax ?? (distance_min + 1);
 
 	attacker->SetTurnForced(attacker->GetDir());
-	attacker->SetTurnType(1);
-	attacker->SetHandAction(1);
-	attacker->UpdateAttach();
+	if (silent_attack.TurnType)
+	{
+		attacker->SetTurnType(silent_attack.TurnType);
+	}
+	if (silent_attack.HandAction)
+	{
+		attacker->SetHandAction(silent_attack.HandAction);
+		attacker->UpdateAttach();
+	}
 
 	victim->SetTurnForced(victim->GetDir());
-	var anim_nr = attacker->PlayAnimation(anim_name, CLONK_ANIM_SLOT_Arms, Anim_Linear(anim_start, 0, anim_length, play_time, anim_ending), Anim_Linear(0, 0, 1000, 10));
+	var anim_nr = attacker->PlayAnimation(anim_name, CLONK_ANIM_SLOT_Arms, Anim_Linear(anim_start, anim_begin, anim_end, play_time, anim_ending), Anim_Linear(0, 0, 1000, 10));
 
 	var attack = CreateEffect(FxSilentAttack, 1, 1);
 	if (attack)
@@ -40,7 +60,7 @@ func StartSilentAttack(object victim, object attacker)
 		attack.time_strike = animation->GetStrikeTime(play_time); // Create an offset, so that the hit matches with the animation
 		attack.time_stop = play_time;
 		attack.anim = anim_nr;
-		attack.constraint = CreateEffect(FxSpringConstraint, 1, 1, 12, 15)->SetBodyA(attacker)->SetBodyB(victim, true);
+		attack.constraint = CreateEffect(FxSpringConstraint, 1, 1, distance_min, distance_max)->SetBodyA(attacker)->SetBodyB(victim, true);
 	}
 }
 

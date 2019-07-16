@@ -41,3 +41,11 @@ func GetCarryTransform(object user, bool idle)
 {
 	if (!idle) return Trans_Translate(400, 0, 700);
 }
+
+func GetSilentAttackAnimation()
+{
+	return 
+	{
+		Animation = Strike_Animations.FastStrike,
+		Direction = ".R", };
+}

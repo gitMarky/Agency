@@ -81,7 +81,6 @@ func EffectsOnBreak(int x, int y, object user)
 		Alpha = PV_KeyFrames(0, 0, 0, 250, 180, 1000, 0),
 	};
 	var pv_name = "Dust";
-	var pv_speed = PV_Random(-3, 3);
 	var pv_lifetime_large = 50;
 	var pv_lifetime_small = PV_Random(36, 96);
 	var amount = 20;
@@ -100,7 +99,7 @@ func EffectsOnBreak(int x, int y, object user)
 	else
 	{
 		CreateParticle(pv_name, x, y, 0, -3, pv_lifetime_large, particles_large);
-		CreateParticle(pv_name, PV_Random(x - 2, x + 2), PV_Random(y - 2, y + 2), pv_speed, pv_speed, pv_lifetime_small, particles_small, amount);
+		CreateParticle(pv_name, PV_Random(x - 2, x + 2), PV_Random(y - 2, y + 2), PV_Random(-3, 3), PV_Random(-6, 0), pv_lifetime_small, particles_small, amount);
 	}
 	_inherited(x, y, user, ...);
 }

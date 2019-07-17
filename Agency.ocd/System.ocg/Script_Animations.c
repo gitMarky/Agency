@@ -18,6 +18,12 @@ static const Strike_Animation = new Global {
 		return strike * play_time / Max(1, length);
 	},
 
+	GetStrikePosition = func ()
+	{
+		// Gets the strike position, relative to the target offset
+		return { X = this.X ?? 0, Y = this.Y ?? 0,};
+	},
+
 	GetAnimationLength = func ()
 	{
 		return this.Length;
@@ -96,7 +102,7 @@ static const Strike_Animations = {
 		Animation = "SwordSlash2",
 		Length = 1300,
 		Start = 600,
-		Strike = 100,
+		Strike = 300,
 		Begin = 1300, End = 0,
 		Ending = ANIM_Remove,
 	},

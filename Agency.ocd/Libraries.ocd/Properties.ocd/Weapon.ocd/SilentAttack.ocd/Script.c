@@ -61,17 +61,31 @@ func StartSilentAttack(object victim, object attacker)
 		attack.time_stop = play_time;
 		attack.anim = anim_nr;
 		attack.constraint = CreateEffect(FxSpringConstraint, 1, 1, distance_min, distance_max)->SetBodyA(attacker)->SetBodyB(victim, true);
+		attack.definition = animation;
 	}
 }
 
 
-func DoSilentAttack(object victim, object attacker)
+func DoSilentAttack(object victim, object attacker, proplist strike_animation)
 {
 	CauseDamage(victim, attacker->GetController());
+
+	if (this.BreakOnMelee)
+	{
+		var x = victim->GetX();
+		var y = victim->GetY();
+		if (strike_animation)
+		{
+			var offset = strike_animation->GetStrikePosition();
+			x += offset.X;
+			y += offset.Y;
+		}
+		this->~EffectsOnBreak(x - GetX(), y - GetY(), attacker);
+	}
 }
 
 
-func FinishSilentAttack(object victim, object attacker, int anim_nr, int dir)
+func FinishSilentAttack(object victim, object attacker, int anim_nr, int dir, bool remove_item)
 {
 	if (victim)
 	{
@@ -89,6 +103,11 @@ func FinishSilentAttack(object victim, object attacker, int anim_nr, int dir)
 		attacker->SetDir(dir);
 		attacker->StopAnimation(anim_nr ?? attacker->GetRootAnimation(CLONK_ANIM_SLOT_Arms));
 		RemoveEffect(FxSilentAttack.Name, attacker);
+	}
+
+	if (this.BreakOnMelee)
+	{
+		this->Break(true);
 	}
 }
 
@@ -139,7 +158,7 @@ local FxSilentAttack = new Effect
 		if (time >= this.time_strike)
 		{
 			this.struck = true;
-			Target->DoSilentAttack(this.victim, this.attacker);
+			Target->DoSilentAttack(this.victim, this.attacker, this.definition);
 		}
 	},
 

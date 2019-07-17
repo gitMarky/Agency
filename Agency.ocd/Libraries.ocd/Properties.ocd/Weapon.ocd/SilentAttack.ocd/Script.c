@@ -63,6 +63,9 @@ func StartSilentAttack(object victim, object attacker)
 		attack.constraint = CreateEffect(FxSpringConstraint, 1, 1, distance_min, distance_max)->SetBodyA(attacker)->SetBodyB(victim, true);
 		attack.definition = animation;
 	}
+	
+	// Update for better visuals
+	attack.victim_plane = { During = attacker.Plane - attacker->GetCalcDir(), After = victim.Plane };
 }
 
 
@@ -89,7 +92,7 @@ func FinishSilentAttack(object victim, object attacker, int anim_nr, int dir, bo
 {
 	if (victim)
 	{
-		victim->SetTurnForced(-1);	
+		victim->SetTurnForced(-1);
 	}
 
 	if (attacker)
@@ -126,7 +129,14 @@ local FxSilentAttack = new Effect
 		}
 
 		this.attacker->SetComDir(COMD_Stop);
-		!this.victim || this.victim->SetComDir(COMD_Stop);
+		if (this.victim)
+		{
+			this.victim->SetComDir(COMD_Stop);
+			if (this.victim_plane)
+			{
+				this.victim.Plane = this.victim_plane.During;
+			}	
+		}
 
 		// Do the actual strike?
 		CheckStrike(time);
@@ -168,6 +178,12 @@ local FxSilentAttack = new Effect
 		{
 			RemoveEffect(nil, nil, this.constraint);
 		}
+
+		if (this.victim && this.victim_plane)
+		{
+			this.victim.Plane = this.victim_plane.After;
+		}
+
 		Target->FinishSilentAttack(this.victim, this.attacker, this.anim_nr, this.dir);
 	},
 };

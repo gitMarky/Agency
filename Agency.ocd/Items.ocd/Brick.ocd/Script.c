@@ -13,6 +13,7 @@ local Description = "$Description$";
 
 local BreakOnMelee = true;
 local BreakOnThrow = true;
+local BreakOnHit = 27;
 
 /* --- Engine Callbacks --- */
 
@@ -24,6 +25,7 @@ func Definition(id type)
 
 func Hit(int x, int y)
 {
+	_inherited(x, y, ...);
 	StonyObjectHit(x, y);
 }
 

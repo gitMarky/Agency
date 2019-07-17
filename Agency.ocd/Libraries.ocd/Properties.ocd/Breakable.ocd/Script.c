@@ -28,3 +28,17 @@ func EffectsOnBreak(int x, int y, object user)
 	// Overwrite as desired
 	_inherited(x, y, user, ...);
 }
+
+
+func Hit(int xdir, int ydir)
+{
+	var self = this; 
+	_inherited(xdir, ydir, ...);
+
+	// xdir and ydir are specified in precision 100, default velocity precision is 10
+	var hit_speed = Distance(0, 0, xdir / 10, ydir / 10);
+	if (self && this.BreakOnHit && hit_speed >= this.BreakOnHit)
+	{
+		Break();
+	}
+}

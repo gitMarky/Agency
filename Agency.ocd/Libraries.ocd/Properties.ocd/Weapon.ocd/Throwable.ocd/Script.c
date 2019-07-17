@@ -361,15 +361,21 @@ local FxThrowAtTarget = new Effect
 			{
 				// Add a basic velocity if you just exited the thrower
 				if (!this.Active)
-				this.Target->SetXDir(target_x, precision);
+				{
+					this.Target->SetXDir(target_x, precision);
+				}
 				// Teleport to the position, cause damage
-				this.Target->SetPosition(victim_x / precision, victim_y / precision);
-				this.Target->CauseDamage(this.Victim, this.Target->GetController());
+				var target = this.Target;
+				target->SetPosition(victim_x / precision, victim_y / precision);
+				target->CauseDamage(this.Victim, target->GetController());
 				// Do the effects later, so that it can e.g. enter a dead target
-				this.Victim->~GetThrowableHitEffects(this.Target);
+				this.Victim->~GetThrowableHitEffects(target);
 				// Reset velocity last, so that it can be used as a directional marker during hit effects
-				this.Target->SetXDir();
-				this.Target->SetYDir();
+				if (target)
+				{
+					target->SetXDir();
+					target->SetYDir();
+				}
 			}
 			else
 			{

@@ -41,9 +41,13 @@ func GetThrowableOffset(int precision)
 
 func GetThrowableHitEffects(object projectile)
 {
-	if (projectile->~IsThrowableWeapon())
+	if (projectile && projectile->~IsThrowableWeapon())
 	{
-		if (projectile->~CausesLethalDamage())
+		if (projectile.BreakOnThrow)
+		{
+			projectile->~Break();
+		}
+		if (projectile && projectile->~CausesLethalDamage())
 		{
 			StickThrowable(projectile);
 		}

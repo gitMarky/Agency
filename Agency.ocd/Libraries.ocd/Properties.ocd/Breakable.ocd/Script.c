@@ -19,6 +19,12 @@ public func Break(bool ignore_effects)
 	{
 		this->~EffectsOnBreak();
 	}
+	this->~TriggerOnBreak();
+}
+
+
+func TriggerOnBreak()
+{
 	RemoveItem(true);
 }
 

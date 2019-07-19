@@ -1,7 +1,8 @@
 /**
-	Marks an object as pacifyable.
+	Marks a character as pacifyable.
  */
 
+func CanBePacified(){ return true; }
 
 /* --- Functions --- */
 

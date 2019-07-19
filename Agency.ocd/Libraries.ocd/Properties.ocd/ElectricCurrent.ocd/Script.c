@@ -1,12 +1,13 @@
 /**
 	Marks an object being able to electrify.
+	
+	While the object is electrified it can connect to one hazard
+	and issue callbacks to it (Property_ElectricHazard):
+	- EffectsOnElectricCurrent(object source) for effects
+	- TriggerOnElectricCurrent(object source) for modifications of the game world
  */
 
-public func HasElectricCurrent(){ return this.ElectricCurrent; }
-public func CanBeElectrified(){  return !this.ElectricCurrent; }
-
-
-local ElectricCurrent = true; // You can overwrite this, to switch between the modes. False = object can be electrified passively
+public func HasElectricCurrent(){ return true; }
 
 
 public func Electrify(object hazard)
@@ -36,7 +37,7 @@ local FxElectricCurrent = new Effect
 	Timer = func ()
 	{
 		// Look for objects that can be electrified, e.g. a puddle
-		if (this.Target->~HasElectricCurrent() && !this.Hazard)
+		if (!this.Hazard)
 		{
 			this.Hazard = this.Target->FindObject(Find_Or(Find_AtPoint(), Find_Distance(5)), Find_NoContainer(), Find_Func("CanBeElectrified"));
 		}
@@ -46,8 +47,8 @@ local FxElectricCurrent = new Effect
 		this.Target->~EffectsOnElectricCurrent();
 		if (this.Hazard)
 		{
-			this.Hazard->~EffectsOnElectricCurrent(); // Create effect
-			this.Hazard->~TriggerOnElectricCurrent(); // Logic for electrocuting victims
+			this.Hazard->~EffectsOnElectricCurrent(this.Target); // Create effect
+			this.Hazard->~TriggerOnElectricCurrent(this.Target); // Logic for electrocuting victims
 		}
 	},
 };

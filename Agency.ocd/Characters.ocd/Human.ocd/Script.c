@@ -4,6 +4,7 @@
 #include Clonk_Sounds
 #include Library_Character_Intenvory
 #include Character_Control // Required for now, or else the inventory will not work correctly..........
+#include Library_Character_Electrocution
 #include Library_Character_Pacification
 #include Library_Character_ThrowableTarget
 

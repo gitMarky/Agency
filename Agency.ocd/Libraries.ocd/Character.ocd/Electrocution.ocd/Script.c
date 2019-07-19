@@ -2,7 +2,12 @@
 	Marks a character as electrocutable.
  */
 
-func CanBeElectrocuted(){ return true; }
+
+func CanBeElectrocuted()
+{
+	return (this->~IsPacified() || this->GetAlive())
+	    && !GetEffect(FxElectrocution.Name, this);
+}
 
 /* --- Functions --- */
 
@@ -56,10 +61,15 @@ local FxElectrocution = new Effect
 		if (time > this.TimeDeath)
 		{
 			Smolder();
+			if (!Random(12))
+			{
+				Sparkle();
+			}
 		}
 		else if (time == this.TimeDeath)
 		{
 			this.Victim->Kill(); // If this were this.Target the effect would vanish, too
+			this.Horizontal = true; // Victim is lying down now
 		}
 		else
 		{

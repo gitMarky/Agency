@@ -11,6 +11,16 @@ local Area = [-15, -15, 30, 20]; // Area the can possibly hold water
 local AreaBounds = []; // Area left and right boundaries, adjusted to actual water output
 local AreaPoints = []; // Array of points where water was inserted
 local AreaActive = nil; // Area that is checked for victims
+local LeakDelay = 0;
+
+local SprayTime = 90;       // Spray effect, only if the strength is > 0 there will be an effect
+local SprayStrength = 75;   // Strength of the water output
+local SprayAngle = 0;      // Angle
+local SprayVariance = 10;  // Angle variance
+local SprayPrecision = 10; // Angle precision
+local SprayX = 0;          // Offset, local
+local SprayY = 0;          // Offset, local
+local SprayAmount = 5;     // Amount of particles per spray
 
 public func CanBeElectrified(){  return AreaActive != nil; }
 
@@ -68,18 +78,18 @@ func Definition(id type)
 
 func EffectsOnElectricCurrent(object source)
 {
+	var particles = 
+	{
+		Prototype = Particles_ElectroSpark1(), 
+		Size = PV_Random(2, 6),
+		ForceY = PV_Gravity(500),
+		OnCollision = PC_Bounce(500),
+	};
 	var pv_ydir = PV_Random(-5, -2);
 	var pv_lifetime = PV_Random(5, 10);
 	var pos = AreaPoints[Random(GetLength(AreaPoints))];
 	if (pos)
 	{
-		var particles = 
-		{
-			Prototype = Particles_ElectroSpark1(), 
-			Size = PV_Random(2, 6),
-			ForceY = PV_Gravity(500),
-			OnCollision = PC_Bounce(500),
-		};
 		CreateParticle("ElectroSpark", pos.X, pos.Y - 1, PV_Random(-3, 3), pv_ydir, pv_lifetime, particles);
 	}
 	if (source && !Random(3))
@@ -127,7 +137,12 @@ func Find_Target()
 
 func Activate()
 {
-	AddTimer(this.LeakWater, 5);	
+	if (SprayTime > 0)
+	{
+		AddTimer(this.SprayWater, 1);
+		LeakDelay = 20 * Max(1, SprayStrength) / GetGravity();
+	}
+	AddTimer(this.LeakWater, 5);
 }
 
 
@@ -153,6 +168,10 @@ func ResetWater()
 
 func LeakWater()
 {
+	if (LeakDelay > 0)
+	{
+		return;
+	}
 	// Fill the area with water!
 	var list = {};
 	var cancel = false;
@@ -200,6 +219,37 @@ func LeakWater()
 		AreaBounds[0] = Min(-5, AreaBounds[0] + 2);
 		AreaBounds[1] = Max(+5, AreaBounds[1] - 2);
 		AreaActive = [AreaBounds[0], Area[1], AreaBounds[1] - AreaBounds[0], Area[3]];
+	}
+}
+
+
+func SprayWater()
+{
+	if (SprayTime > 0)
+	{
+		var lifetime = 20 + 20 * Max(1, SprayStrength) / GetGravity();
+		var water = Particles_Colored({
+			OnCollision = PC_Bounce(100),
+			CollisionVertex = 500,
+			Size = PV_KeyFrames(0, 0, Max(1, SprayAmount), 500, 2),
+			ForceX = PV_Wind(PV_KeyFrames(0, 0, 0, 200, PV_Random(15, 30))),
+			ForceY = PV_Gravity(PV_KeyFrames(0, 0, 1000, 500, 900, 800, 500)),
+			Stretch = PV_KeyFrames(0, 0, 1000, 60, PV_Speed(1000), 300, 1000),
+			Rotation = PV_Direction(),
+			Alpha = PV_KeyFrames(0, 0, 128, 800, 50, 1000, 0),
+		}, GetAverageTextureColor("water"));
+		for (var i = 0; i < SprayAmount; ++i)
+		{
+			var angle = SprayAngle + RandomX(-SprayVariance, +SprayVariance);
+			CreateParticle("Magic", SprayX, SprayY, Sin(angle, SprayStrength, SprayPrecision), -Cos(angle, SprayStrength, SprayPrecision), lifetime, water);
+		}
+		SprayTime -= 1;
+		LeakDelay -= 1;
+		SprayStrength = Min(SprayStrength, SprayTime);
+	}
+	if (SprayTime <= 0)
+	{
+		RemoveTimer(this.SprayWater);
 	}
 }
 

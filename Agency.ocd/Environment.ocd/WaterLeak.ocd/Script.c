@@ -7,10 +7,10 @@ local Name = "$Name$";
 local Description = "$Description$";
 local Visibility = VIS_Editor; // Only visible in Editor Mode
 
-local Area = [-15, -15, 30, 20]; // Area the can possibly hold water
-local AreaBounds = []; // Area left and right boundaries, adjusted to actual water output
-local AreaPoints = []; // Array of points where water was inserted
-local AreaActive = nil; // Area that is checked for victims
+local LeakArea = [-15, -15, 30, 20]; // LeakArea the can possibly hold water
+local LeakAreaBounds = []; // LeakArea left and right boundaries, adjusted to actual water output
+local LeakAreaPoints = []; // Array of points where water was inserted
+local LeakAreaActive = nil; // LeakArea that is checked for victims
 local LeakDelay = 0;
 
 local SprayTime = 90;       // Spray effect, only if the strength is > 0 there will be an effect
@@ -22,7 +22,7 @@ local SprayX = 0;          // Offset, local
 local SprayY = 0;          // Offset, local
 local SprayAmount = 5;     // Amount of particles per spray
 
-public func CanBeElectrified(){  return AreaActive != nil; }
+public func CanBeElectrified(){  return LeakAreaActive != nil; }
 
 /* --- Engine Callbacks --- */
 
@@ -30,7 +30,7 @@ func Construction(object by)
 {
 	_inherited(by, ...);
 	AdjustPosition();
-	ScheduleCall(this, this.SetAreaRect, 1, 0, GetID().Area);
+	ScheduleCall(this, this.SetLeakAreaRect, 1, 0, GetID().LeakArea);
 }
 
 
@@ -42,31 +42,31 @@ func Definition(id type)
 		type.EditorProps = {};
 	}
 
-	// Area to check for water
-	type.EditorProps.Area = 
+	// LeakArea to check for water
+	type.EditorProps.LeakArea = 
 	{ 
-		Name = "$Area$",
+		Name = "$LeakArea$",
 		Type = "rect",
 		Value =
 		{
-			Rect = type.Area
+			Rect = type.LeakArea
 		},
-		ValueKey = "Area",
+		ValueKey = "LeakArea",
 		Color = RGB(0, 150, 255),
 		Relative = true,
-		Set = "SetAreaRect",
+		Set = "SetLeakAreaRect",
 		SetRoot = false
 	};
-	// Area to check for victims, cannot be set
-	type.EditorProps.AreaActive = 
+	// LeakArea to check for victims, cannot be set
+	type.EditorProps.LeakAreaActive = 
 	{ 
-		Name = "$AreaActive$",
+		Name = "$LeakAreaActive$",
 		Type = "rect",
 		Value =
 		{
-			Rect = type.AreaActive
+			Rect = type.LeakAreaActive
 		},
-		ValueKey = "AreaActive",
+		ValueKey = "LeakAreaActive",
 		Color = RGB(255, 180, 0),
 		Relative = true,
 		SetRoot = false
@@ -87,7 +87,7 @@ func EffectsOnElectricCurrent(object source)
 	};
 	var pv_ydir = PV_Random(-5, -2);
 	var pv_lifetime = PV_Random(5, 10);
-	var pos = AreaPoints[Random(GetLength(AreaPoints))];
+	var pos = LeakAreaPoints[Random(GetLength(LeakAreaPoints))];
 	if (pos)
 	{
 		CreateParticle("ElectroSpark", pos.X, pos.Y - 1, PV_Random(-3, 3), pv_ydir, pv_lifetime, particles);
@@ -97,8 +97,8 @@ func EffectsOnElectricCurrent(object source)
 		var x = source->GetX() - GetX();
 		var y = -1;
 		for (; GBackSolid(x, y) && y > -3; --y);
-		var xdl = AreaBounds[0] - x;
-		var xdr = AreaBounds[0] + AreaBounds[1] - x;
+		var xdl = LeakAreaBounds[0] - x;
+		var xdr = LeakAreaBounds[0] + LeakAreaBounds[1] - x;
 		CreateParticle("ElectroSpark", x, y, PV_Random(xdl, xdr), pv_ydir, pv_lifetime, particles);
 	}
 }
@@ -122,7 +122,7 @@ func TriggerOnElectricCurrent(object source)
 
 func Find_InZone()
 {
-	return Find_InRect(AreaActive[0], AreaActive[1], AreaActive[2], AreaActive[3]);
+	return Find_InRect(LeakAreaActive[0], LeakAreaActive[1], LeakAreaActive[2], LeakAreaActive[3]);
 }
 
 
@@ -140,7 +140,7 @@ func Activate()
 	if (SprayTime > 0)
 	{
 		AddTimer(this.SprayWater, 1);
-		LeakDelay = 20 * Max(1, SprayStrength) / GetGravity();
+		LeakDelay = 15 * Max(1, SprayStrength) / GetGravity();
 	}
 	AddTimer(this.LeakWater, 5);
 }
@@ -161,8 +161,8 @@ func AdjustPosition()
 
 func ResetWater()
 {
-	AreaBounds[0] = 0;
-	AreaBounds[1] = 0;
+	LeakAreaBounds[0] = 0;
+	LeakAreaBounds[1] = 0;
 }
 
 
@@ -175,30 +175,30 @@ func LeakWater()
 	// Fill the area with water!
 	var list = {};
 	var cancel = false;
-	var max_points = Area[2];
+	var max_points = LeakArea[2];
 	if (InsertMaterial(Material("Water"), 0, 0, 0, 0, list))
 	{
-		var left = Area[0];
-		var right = left + Area[2];
-		var top = Area[1];
-		var bottom = top + Area[3];
+		var left = LeakArea[0];
+		var right = left + LeakArea[2];
+		var top = LeakArea[1];
+		var bottom = top + LeakArea[3];
 
 		list.X -= GetX();
 		list.Y -= GetY();
 		if (Inside(list.X, left, right) && Inside(list.Y, top, bottom))
 		{
 			// Expand the bounds
-			if (list.X < AreaBounds[0])
+			if (list.X < LeakAreaBounds[0])
 			{
-				AreaBounds[0] = list.X;
+				LeakAreaBounds[0] = list.X;
 			}
-			if (list.X > AreaBounds[1])
+			if (list.X > LeakAreaBounds[1])
 			{
-				AreaBounds[1] = list.X;
+				LeakAreaBounds[1] = list.X;
 			}
 			// Save for later
-			PushBack(AreaPoints, { X = list.X, Y = list.Y });
-			if (GetLength(AreaPoints) >= max_points)
+			PushBack(LeakAreaPoints, { X = list.X, Y = list.Y });
+			if (GetLength(LeakAreaPoints) >= max_points)
 			{
 				cancel = true;
 			}
@@ -216,9 +216,9 @@ func LeakWater()
 	{
 		RemoveTimer(this.LeakWater);
 		// Shrink the bounds a bit, looks better (but keep a minimum area). Then set the active area
-		AreaBounds[0] = Min(-5, AreaBounds[0] + 2);
-		AreaBounds[1] = Max(+5, AreaBounds[1] - 2);
-		AreaActive = [AreaBounds[0], Area[1], AreaBounds[1] - AreaBounds[0], Area[3]];
+		LeakAreaBounds[0] = Min(-5, LeakAreaBounds[0] + 2);
+		LeakAreaBounds[1] = Max(+5, LeakAreaBounds[1] - 2);
+		LeakAreaActive = [LeakAreaBounds[0], LeakArea[1], LeakAreaBounds[1] - LeakAreaBounds[0], LeakArea[3]];
 	}
 }
 
@@ -256,18 +256,18 @@ func SprayWater()
 
 /* --- Setter functions for EditorProps --- */
 
-func SetAreaRect(array new_area)
+func SetLeakAreaRect(array new_area)
 {
-	Area = new_area;
-	AreaBounds = [0, 0];
-	SetShape(Area[0], Area[1], Area[2], Area[3]);
+	LeakArea = new_area;
+	LeakAreaBounds = [0, 0];
+	SetShape(LeakArea[0], LeakArea[1], LeakArea[2], LeakArea[3]);
 	return true;
 }
 
 
-func SetAreaActive(array new_area)
+func SetLeakAreaActive(array new_area)
 {
-	AreaActive = new_area;
+	LeakAreaActive = new_area;
 	return true;
 }
 
@@ -278,8 +278,8 @@ func SaveScenarioObject(props)
 {
 	if (_inherited(props, ...))
 	{
-		props->AddCall("Area", this, "SetAreaRect", Area);
-		props->AddCall("AreaActive", this, "SetAreaActive", AreaActive);
+		props->AddCall("LeakArea", this, "SetLeakAreaRect", LeakArea);
+		props->AddCall("LeakAreaActive", this, "SetLeakAreaActive", LeakAreaActive);
 		return true;
 	}
 	else

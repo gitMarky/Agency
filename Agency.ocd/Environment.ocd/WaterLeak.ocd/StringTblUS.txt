@@ -1,4 +1,5 @@
 Name=Water Leak
 Description=A small body of water that can be electrified
 
-Area=Area
+Area=Water area
+AreaActive=Electrified area

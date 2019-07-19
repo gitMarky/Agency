@@ -141,7 +141,7 @@ local FxElectrocution = new Effect
 			Size = PV_Random(2, 6),
 			Attach = ATTACH_Front,
 			ForceY = PV_Gravity(500),
-		OnCollision = PC_Bounce(500),
+			OnCollision = PC_Bounce(500),
 		};
 		var bottom = this.Victim->GetBottom();
 		this.Victim->CreateParticle("ElectroSpark", PV_Random(-range_x, +range_x), PV_Random(bottom, bottom - range_y), PV_Random(-3, 3), PV_Random(-15, -5), PV_Random(5, 10), particles);

@@ -6,7 +6,7 @@
 
 local Name = "$Name$";
 local Description = "$Description$";
-local Visibility = VIS_Editor; // Only visible in Editor Mode
+local Visibility = VIS_Editor;
 
 public func CanBeElectrified(){  return LeakAreaActive != nil; }
 

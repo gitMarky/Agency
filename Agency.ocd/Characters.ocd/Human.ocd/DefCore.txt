@@ -12,7 +12,6 @@ VertexCNAT=    128,132, 11,129,130,129,130,129,130
 VertexFriction=300,300,100,300,300,300,300,300,300
 Value=25
 Mass=50
-Collection=-8,-10,16,27
 NoGet=1
 Float=-2
 ColorByOwner=1

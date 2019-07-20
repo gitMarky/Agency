@@ -5,7 +5,9 @@ Legend:
 Uses semantic/behavioural versioning: major version, minor version, patch.
 - The patch number is incremented for minor changes and bug fixes which do not change the interface/behaviour.
 - The minor version is incremented for new, but backward-compatible features.
-- The major version is incremented for changes which are not backward-compatible. 
+- The major version is incremented for changes which are not backward-compatible.
+- Version numbers are increased when a release adds one or multiple of the aforementioned changes, per category.
+- Version numbers minor and patch are reset when the major version increases.
 
 Mark |  Description  |  Additional information
 ----------------------------------------------
@@ -16,3 +18,17 @@ Mark |  Description  |  Additional information
 !    |  Change       |  Something was changed, but you will have to adjust code if you rely on it.
 
 ---------------------------------------------------------------------------------------------------
+
+
+
+
+
+Version 0.1.0
+---------------------------------------------------------------------------------------------------
++ Added basic control scheme
++ Added basic ingame HUD
++ Added basic interactions: Silent attack
++ Added basic damage and melee weapon system
++ Added basic electrocution system
++ Added basic pacification system
++ Added basic throwable system

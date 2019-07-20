@@ -1,0 +1,5 @@
+[DefCore]
+id=Property_Damage_Lethal
+Version=8,0
+Category=C4D_StaticBack
+HideInCreator=true

@@ -1,0 +1,2 @@
+Name=Car Battery
+Description=Take shelter and keep [Use] pressed to ignite the placed dynamite.

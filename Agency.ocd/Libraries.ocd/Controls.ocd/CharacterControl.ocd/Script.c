@@ -24,10 +24,6 @@
 */
 
 
-/* Item limit */
-local MaxContentsCount = 5; // Size of the clonks inventory
-local HandObjects = 1; // Amount of hands to select items
-public func NoStackedContentMenu() { return true; }	// Contents-Menu shall display each object in a seperate slot
 
 
 /* ################################################# */
@@ -195,9 +191,9 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 		return Control2Menu(ctrl, x,y,strength, repeat, status);
 	}
 
-	var contents = this->GetHandItem(0);
+	var contents = this->GetActiveItem();
 
-	// usage
+	// Usage
 	var use = (ctrl == CON_Use || ctrl == CON_UseAlt);
 	if (use)
 	{
@@ -232,8 +228,6 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 				// ("using" is set to the object in StartUseControl - when the
 				// object returns true on that callback. Exactly what we want)
 				if (GetUsedObject() == vehicle) return true;
-				// has been cancelled (it is not the start of the usage but no object is used)
-//				if (vehicle && !GetUsedObject() && (repeat || status == CONS_Up)) return true;
 			}
 		}
 		// releasing the use-key always cancels shelved commands (in that case no GetUsedObject() exists)
@@ -319,24 +313,6 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 		}
 
 		return ObjectControlMovement(plr, ctrl, strength, status);
-	}
-
-	// Do a roll on landing or when standing. This means that the CON_Down was not handled previously.
-	if (ctrl == CON_Roll && ComDir2XY(GetComDir())[0] != 0)
-	{
-		if (this->IsWalking())
-		{
-			if (this->Stuck())
-			{
-				// Still show some visual feedback for the player.
-				this->DoKneel();
-			}
-			else
-			{
-				this->DoRoll();
-			}
-			return true;
-		}
 	}
 
 	// Fall through half-solid mask
@@ -496,55 +472,6 @@ public func CanEnter()
 
 public func IsMounted() { return GetProcedure() == "ATTACH"; }
 
-/*-- Throwing --*/
-
-// Throwing
-func DoThrow(object obj, int angle)
-{
-	// parameters...
-	var iX, iY, iR, iXDir, iYDir, iRDir;
-	iX = 4; if (!GetDir()) iX = -iX;
-	iY = Cos(angle,-4);
-	iR = Random(360);
-	iRDir = RandomX(-10,10);
-
-	iXDir = Sin(angle,this.ThrowSpeed);
-	iYDir = Cos(angle,-this.ThrowSpeed);
-	// throw boost (throws stronger upwards than downwards)
-	if (iYDir < 0) iYDir = iYDir * 13/10;
-	if (iYDir > 0) iYDir = iYDir * 8/10;
-
-	// add own velocity
-	iXDir += GetXDir(100)/2;
-	iYDir += GetYDir(100)/2;
-
-	// throw
-	obj->Exit(iX, iY, iR, 0, 0, iRDir);
-	obj->SetXDir(iXDir,100);
-	obj->SetYDir(iYDir,100);
-
-	// Prevent hitting the thrower.
-	var block_blow = AddEffect("BlockBlowControl", this, 100, 3, this);
-	block_blow.obj = obj;
-	return true;
-}
-
-// custom throw
-// implemented in Clonk.ocd/Animations.ocd
-public func ControlThrow() { return _inherited(...); }
-
-// Effect for blocking a blow by an object.
-public func FxBlockBlowControlTimer()
-{
-	return FX_Execute_Kill;
-}
-
-public func FxBlockBlowControlQueryCatchBlow(object target, effect fx, object obj)
-{
-	if (obj == fx.obj)
-		return true;
-	return false;
-}
 
 /*-- Jumping --*/
 

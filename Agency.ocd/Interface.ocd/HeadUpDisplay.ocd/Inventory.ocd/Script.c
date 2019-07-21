@@ -16,6 +16,8 @@ local inventory_slot;
 local inventory_gui_menu;
 local inventory_gui_id;
 
+static const GUI_ID_MainItem = 1;
+
 /* GUI creation */
 
 // For custom HUD graphics overload the following function as deemed fit.
@@ -29,8 +31,8 @@ func AssembleInventoryButton()
 	{
 		Target = this,
 		Style = GUI_NoCrop,
-		Symbol = Icon_Menu_Circle,
-		ID = 1,
+		Symbol = { Std = Icon_Menu_Circle, Active = Icon_Menu_CircleHighlight},
+		ID = GUI_ID_MainItem,
 		Left = pos.Left, Top = pos.Top, Right = pos.Right, Bottom = pos.Bottom,
 		count =
 		{
@@ -170,7 +172,12 @@ func UpdateInventory()
 	// update inventory-slots
 
 	var item = cursor->~GetHandItem();
-	if (!item)
+	var is_unholstered = false;
+	if (item)
+	{
+		is_unholstered = true;
+	}
+	else
 	{
 		item = cursor->~GetActiveItem();
 	}
@@ -282,7 +289,12 @@ func UpdateInventory()
 			inventory_slot.had_custom_overlay = false;
 		}
 		
-		GuiUpdate(update, inventory_gui_id, 1, this);
+		GuiUpdate(update, inventory_gui_id, GUI_ID_MainItem, this);
+		
+		
+		var tag = "Std";
+		if (is_unholstered) tag = "Active";
+		GuiUpdateTag(tag, inventory_gui_id, GUI_ID_MainItem, this);
 
 		inventory_slot.obj = item;
 		inventory_slot.empty = !item;

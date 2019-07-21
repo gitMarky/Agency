@@ -31,7 +31,9 @@
 protected func Construction()
 {
 	if (this.control == nil)
+	{
 		this.control = {};
+	}
 	this.control.hotkeypressed = false;
 
 	this.control.alt = false;
@@ -43,9 +45,15 @@ protected func OnActionChanged(string oldaction)
 	var old_act = this["ActMap"][oldaction];
 	var act = this["ActMap"][GetAction()];
 	var old_proc = 0;
-	if (old_act) old_proc = old_act["Procedure"];
+	if (old_act)
+	{
+		old_proc = old_act["Procedure"];
+	}
 	var proc = 0;
-	if (act) proc = act["Procedure"];
+	if (act)
+	{
+		proc = act["Procedure"];
+	}
 	// if the object's procedure has changed from a non Push/Attach
 	// to a Push/Attach action or the other way round, the usage needs
 	// to be cancelled
@@ -60,32 +68,6 @@ protected func OnActionChanged(string oldaction)
 	return _inherited(oldaction,...);
 }
 
-/** Returns additional interactions the clonk possesses as an array of function pointers.
-	Returned Proplist contains:
-		Fn			= Name of the function to call
-		Object		= Object to call the function in. Will also be displayed on the interaction-button
-		Description	= A description of what the interaction does
-		IconID		= ID of the definition that contains the icon (like GetInteractionMetaInfo)
-		IconName	= Name of the graphic for the icon (like GetInteractionMetaInfo)
-		Priority	= Where to sort in in the interaction-list. 0=front, 10=after script, 20=after vehicles, 30=after structures, nil means no preference
-*/
-public func GetExtraInteractions()
-{
-	var functions = _inherited(...) ?? [];
-
-	// flipping construction-preview
-	var fx = GetEffect("ControlConstructionPreview", this);
-	if (fx)
-	{
-		if (fx.flipable)
-			PushBack(functions, {Fn = "Flip", Description=ConstructionPreviewer->GetFlipDescription(), Object=fx.preview, IconID=ConstructionPreviewer_IconFlip, Priority=0});
-	}
-	// call elevator cases
-	var elevators = FindObjects(Find_ID(ElevatorCase), Find_InRect(-ELEVATOR_CALL_DISTANCE, AbsY(0), ELEVATOR_CALL_DISTANCE * 2, GetY() + AbsY(LandscapeHeight())), Find_Func("Ready", this));
-	for (var elevator in elevators)
-		PushBack(functions, { Fn = "CallCase", Object=elevator, Description=elevator->GetCallDescription(), Priority=0 });
-	return functions;
-}
 
 /* +++++++++++++++++++++++++++ Clonk Control +++++++++++++++++++++++++++ */
 
@@ -93,7 +75,9 @@ public func GetExtraInteractions()
 public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, int status)
 {
 	if (!this)
+	{
 		return false;
+	}
 
 	// Contents menu
 	if (ctrl == CON_Contents && status == CONS_Down)
@@ -103,10 +87,15 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 		{
 			var is_content = GetMenu()->~IsContentMenu();
 			// unclosable menu? bad luck
-			if (!this->~TryCancelMenu()) return true;
+			if (!this->~TryCancelMenu())
+			{
+				return true;
+			}
 			// If contents menu, don't open new one and return.
 			if (is_content)
+			{
 				return true;
+			}
 		}
 		// Open contents menu.
 		CancelUse();
@@ -114,7 +103,9 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 		// the interaction menu calls SetMenu(this) in the clonk
 		// so after this call menu = the created menu
 		if (GetMenu())
+		{
 			GetMenu()->~Show();
+		}
 		return true;
 	}
 
@@ -129,15 +120,23 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 	  */
 	if (GetUsedObject() && ctrl == CON_Aim)
 	{
-		if (this.control.alt) ctrl = CON_UseAlt;
-		else     ctrl = CON_Use;
+		if (this.control.alt)
+		{
+			ctrl = CON_UseAlt;
+		}
+		else
+		{
+			ctrl = CON_Use;
+		}
 
 		repeat = true;
 		status = CONS_Down;
 	}
 	// controls except a few reset a previously given command
 	else if (status != CONS_Moved)
+	{
 		SetCommand("None");
+	}
 
 	/* aiming with analog pad or keys:
 	   This works completely different. There are CON_AimAxis* and CON_Aim*,
@@ -164,7 +163,6 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 		x = this.control.mlastx;
 		y = this.control.mlasty;
 	}
-
 	// save last mouse position:
 	// if the using has to be canceled, no information about the current x,y
 	// is available. Thus, the last x,y position needs to be saved
@@ -183,7 +181,9 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 	// That's why the clonk may only interact with a vehicle if in an
 	// appropiate procedure:
 	if (proc != "ATTACH" && proc != "PUSH")
+	{
 		vehicle = nil;
+	}
 
 	// menu
 	if (this.control.menu)
@@ -221,23 +221,30 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 			  */
 
 			if (ControlUse2Script(ctrl, x, y, strength, repeat, status, vehicle))
+			{
 				return true;
-			else
+			}
+			else if (GetUsedObject() == vehicle)
 			{
 				// handled if the horse is the used object
 				// ("using" is set to the object in StartUseControl - when the
 				// object returns true on that callback. Exactly what we want)
-				if (GetUsedObject() == vehicle) return true;
+				return true;
 			}
 		}
 		// releasing the use-key always cancels shelved commands (in that case no GetUsedObject() exists)
-		if (status == CONS_Up) StopShelvedCommand();
+		if (status == CONS_Up)
+		{
+			StopShelvedCommand();
+		}
 		// Release commands are always forwarded even if contents is 0, in case we
 		// need to cancel use of an object that left inventory
 		if (contents || (status == CONS_Up && GetUsedObject()))
 		{
 			if (ControlUse2Script(ctrl, x, y, strength, repeat, status, contents))
+			{
 				return true;
+			}
 		}
 	}
 
@@ -260,11 +267,15 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 			// Object overloaded throw control?
 			// Call this before QueryRejectDeparture to allow alternate use of non-droppable objects
 			if (contents->~ControlThrow(this, x, y))
+			{
 				return true;
+			}
 
 			// The object does not want to be dropped? Still handle command.
 			if (contents->~QueryRejectDeparture(this))
+			{
 				return true;
+			}
 
 			// Quick-stash into grabbed vehicle?
 			if (vehicle && proc == "PUSH" && vehicle->~IsContainer())
@@ -272,7 +283,9 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 				CancelUse();
 				vehicle->Collect(contents);
 				if (!contents || contents->Contained() != this)
+				{
 					Sound("Hits::SoftTouch*", false, nil, GetOwner());
+				}
 				return true;
 			}
 
@@ -280,12 +293,16 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 			var only_drop = proc == "SCALE" || proc == "HANGLE" || proc == "SWIM";
 			// also drop if no throw would be possible anyway
 			if (only_drop || Distance(0, 0, x, y) < 10 || (Abs(x) < 10 && y > 10))
+			{
 				only_drop = true;
+			}
 			// throw
 			CancelUse();
 
 			if (only_drop)
+			{
 				return ObjectCommand("Drop", contents);
+			}
 			else
 			{
 				if (HasVirtualCursor() && !VirtualCursor()->IsActive())
@@ -363,18 +380,21 @@ public func ObjectCommand(string command, object target, int tx, int ty, object 
 	// special control for throw and jump
 	// but only with controls, not with general commands
 	if (command == "Throw")
+	{
 		return this->~ControlThrow(target, tx, ty);
+	}
 	else if (command == "Jump")
+	{
 		return this->~ControlJump();
+	}
 	// else standard command
 	else
 	{
 		// Make sure to not recollect the item immediately on drops.
-		if (command == "Drop")
+		if (command == "Drop" && target)
 		{
 			// Disable collection for a moment.
-			if (target)
-				this->OnDropped(target);
+			this->OnDropped(target);
 		}
 		return SetCommand(command, target, tx, ty, target2, data);
 	}
@@ -407,20 +427,24 @@ func ControlMovement2Script(int ctrl, int x, int y, int strength, bool repeat, i
 	{
 		var control_string = "Control";
 		if (Contained() == obj)
+		{
 			control_string = "Contained";
-
+		}
 		if (status == CONS_Up)
 		{
 			// if any movement key has been released, ControlStop is called
 			if (obj->Call(Format("~%sStop", control_string), this, ctrl))
+			{
 				return true;
+			}
 		}
 		else
 		{
 			// what about gamepad-deadzone?
 			if (strength != nil && strength < CON_Gamepad_Deadzone)
+			{
 				return true;
-
+			}
 			// Control*
 			if (ctrl == CON_Left)  if (obj->Call(Format("~%sLeft",control_string),this))  return true;
 			if (ctrl == CON_Right) if (obj->Call(Format("~%sRight",control_string),this)) return true;
@@ -428,8 +452,12 @@ func ControlMovement2Script(int ctrl, int x, int y, int strength, bool repeat, i
 			if (ctrl == CON_Down)  if (obj->Call(Format("~%sDown",control_string),this))  return true;
 
 			// for attached (e.g. horse: also Jump command
-			if (GetProcedure() == "ATTACH")
-				if (ctrl == CON_Jump)  if (obj->Call("ControlJump",this)) return true;
+			if (GetProcedure() == "ATTACH"
+			&&  ctrl == CON_Jump
+			&&  obj->Call("ControlJump",this))
+			{
+				return true;
+			}
 		}
 	}
 
@@ -441,9 +469,15 @@ public func FxIntControlFreeHandsStart(object target, proplist fx, int temp)
 	// Process on non-temp as well in case scale/handle effects need to stack
 	// Stop current action
 	var proc = GetProcedure();
-	if (proc == "SCALE" || proc == "HANGLE") SetAction("Walk");
+	if (proc == "SCALE" || proc == "HANGLE")
+	{
+		SetAction("Walk");
+	}
 	// Make sure ActMap is writable
-	if (this.ActMap == this.Prototype.ActMap) this.ActMap = new this.ActMap{};
+	if (this.ActMap == this.Prototype.ActMap)
+	{
+		this.ActMap = new this.ActMap{};
+	}
 	// Kill scale/hangle effects
 	fx.act_scale = this.ActMap.Scale;
 	this.ActMap.Scale = nil;
@@ -455,8 +489,14 @@ public func FxIntControlFreeHandsStart(object target, proplist fx, int temp)
 public func FxIntControlFreeHandsStop(object target, proplist fx, int reason, bool temp)
 {
 	// Restore scale/hangle effects (engine will handle re-grabbing walls if needed)
-	if (fx.act_scale) this.ActMap.Scale = fx.act_scale;
-	if (fx.act_hangle) this.ActMap.Hangle = fx.act_hangle;
+	if (fx.act_scale)
+	{
+		this.ActMap.Scale = fx.act_scale;
+	}
+	if (fx.act_hangle)
+	{
+		this.ActMap.Hangle = fx.act_hangle;
+	}
 	return FX_OK;
 }
 
@@ -466,7 +506,10 @@ public func CanEnter()
 	var proc = GetProcedure();
 	if (proc != "WALK" && proc != "SWIM" && proc != "SCALE" &&
 		proc != "HANGLE" && proc != "FLOAT" && proc != "FLIGHT" &&
-		proc != "PUSH") return false;
+		proc != "PUSH")
+	{
+		return false;
+	}
 	return true;
 }
 
@@ -562,15 +605,30 @@ public func ControlJumpExecute(int ydir)
 func GetInteractionPriority(object target)
 {
 	// Self with high priority
-	if (target == this) return 100;
+	if (target == this)
+	{
+		return 100;
+	}
 	// Dead Clonks are shown (for a death message e.g.) but sorted to the bottom.
-	if (!GetAlive()) return -190;
+	if (!GetAlive())
+	{
+		return -190;
+	}
 	var owner = NO_OWNER;
-	if (target) owner = target->GetOwner();
+	if (target)
+	{
+		owner = target->GetOwner();
+	}
 	// Prefer own clonks for item transfer
-	if (owner == GetOwner()) return -100;
+	if (owner == GetOwner())
+	{
+		return -100;
+	}
 	// If no own clonk, prefer friendly
-	if (!Hostile(owner, GetOwner())) return -120;
+	if (!Hostile(owner, GetOwner()))
+	{	
+		return -120;
+	}
 	// Hostile clonks? Lowest priority.
 	return -200;
 }

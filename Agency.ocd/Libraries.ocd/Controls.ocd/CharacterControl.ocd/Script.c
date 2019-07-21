@@ -471,13 +471,13 @@ public func FxIntControlFreeHandsStop(object target, proplist fx, int reason, bo
 public func CanEnter()
 {
 	var proc = GetProcedure();
-	if (proc != "WALK" && proc != "SWIM" && proc != "SCALE" &&
-		proc != "HANGLE" && proc != "FLOAT" && proc != "FLIGHT" &&
-		proc != "PUSH")
-	{
-		return false;
-	}
-	return true;
+	return proc == DFA_WALK
+	    || proc == DFA_PUSH
+	    || proc == DFA_SWIM
+	    || proc == DFA_SCALE
+	    || proc == DFA_HANGLE
+	    || proc == DFA_FLOAT
+	    || proc == DFA_FLIGHT;
 }
 
 public func IsMounted() { return GetProcedure() == "ATTACH"; }

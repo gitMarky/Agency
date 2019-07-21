@@ -264,28 +264,9 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 	{
 		if (contents)
 		{
-			// Object overloaded throw control?
-			// Call this before QueryRejectDeparture to allow alternate use of non-droppable objects
-			if (contents->~ControlThrow(this, x, y))
-			{
-				return true;
-			}
-
 			// The object does not want to be dropped? Still handle command.
 			if (contents->~QueryRejectDeparture(this))
 			{
-				return true;
-			}
-
-			// Quick-stash into grabbed vehicle?
-			if (vehicle && proc == "PUSH" && vehicle->~IsContainer())
-			{
-				CancelUse();
-				vehicle->Collect(contents);
-				if (!contents || contents->Contained() != this)
-				{
-					Sound("Hits::SoftTouch*", false, nil, GetOwner());
-				}
 				return true;
 			}
 
@@ -299,20 +280,7 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 			// throw
 			CancelUse();
 
-			if (only_drop)
-			{
-				return ObjectCommand("Drop", contents);
-			}
-			else
-			{
-				if (HasVirtualCursor() && !VirtualCursor()->IsActive())
-				{
-					var angle = DEFAULT_THROWING_ANGLE * (GetDir()*2 - 1);
-					x = +Sin(angle, CURSOR_Radius, 10);
-					y = -Cos(angle, CURSOR_Radius, 10);
-				}
-				return ObjectCommand("Throw", contents, x, y);
-			}
+			return ObjectCommand("Drop", contents);
 		}
 	}
 
@@ -379,11 +347,7 @@ public func ObjectCommand(string command, object target, int tx, int ty, object 
 {
 	// special control for throw and jump
 	// but only with controls, not with general commands
-	if (command == "Throw")
-	{
-		return this->~ControlThrow(target, tx, ty);
-	}
-	else if (command == "Jump")
+	if (command == "Jump")
 	{
 		return this->~ControlJump();
 	}
@@ -412,7 +376,10 @@ public func ControlCommand(string command, object target, int tx, int ty)
 	if (command == "Drop")
 	{
 		// Disable collection for a moment.
-		if (target) this->OnDropped(target);
+		if (target)
+		{	
+			this->OnDropped(target);
+		}
 	}
 	return _inherited(command, target, tx, ty, ...);
 }

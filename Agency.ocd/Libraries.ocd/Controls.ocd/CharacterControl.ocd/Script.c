@@ -202,11 +202,11 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 			return ControlUse2Script(ctrl, x, y, strength, repeat, status, house);
 		}
 		// control to grabbed vehicle
-		else if (vehicle && proc == "PUSH")
+		else if (vehicle && proc == DFA_PUSH)
 		{
 			return ControlUse2Script(ctrl, x, y, strength, repeat, status, vehicle);
 		}
-		else if (vehicle && proc == "ATTACH")
+		else if (vehicle && proc == DFA_ATTACH)
 		{
 			/* objects to which clonks are attached (like horses, mechs,...) have
 			   a special handling:
@@ -260,7 +260,7 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 	// Throwing and dropping
 	// only if not in house, not grabbing a vehicle and an item selected
 	// only act on press, not release
-	if (ctrl == CON_Throw && !house && (!vehicle || proc == "ATTACH" || proc == "PUSH") && status == CONS_Down)
+	if (ctrl == CON_Throw && !house && (!vehicle || proc == DFA_ATTACH || proc == DFA_PUSH) && status == CONS_Down)
 	{
 		if (contents)
 		{
@@ -271,7 +271,7 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 			}
 
 			// just drop in certain situations
-			var only_drop = proc == "SCALE" || proc == "HANGLE" || proc == "SWIM";
+			var only_drop = proc == DFA_SCALE || proc == DFA_HANGLE || proc == DFA_SWIM;
 			// also drop if no throw would be possible anyway
 			if (only_drop || Distance(0, 0, x, y) < 10 || (Abs(x) < 10 && y > 10))
 			{
@@ -436,7 +436,7 @@ public func FxIntControlFreeHandsStart(object target, proplist fx, int temp)
 	// Process on non-temp as well in case scale/handle effects need to stack
 	// Stop current action
 	var proc = GetProcedure();
-	if (proc == "SCALE" || proc == "HANGLE")
+	if (proc == DFA_SCALE || proc == DFA_HANGLE)
 	{
 		SetAction("Walk");
 	}
@@ -480,7 +480,6 @@ public func CanEnter()
 	    || proc == DFA_FLIGHT;
 }
 
-public func IsMounted() { return GetProcedure() == "ATTACH"; }
 
 
 /*-- Jumping --*/

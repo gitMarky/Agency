@@ -136,9 +136,18 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 	}
 
 	// Holster or unholster
-	if (ctrl == CON_Holster && status == CONS_Down)
+	if (ctrl == CON_Holster && status == CONS_Down && this->ReadyToAction())
 	{
-		Log("Holstering...");
+		var in_hands = this->GetHandItem();
+		var selected = this->GetActiveItem();
+		if (selected == in_hands) // Just holster then
+		{
+			selected = nil;
+		}
+		if (!GetEffect(FxInventorySwitchItem.Name, this))
+		{
+			CreateEffect(FxInventorySwitchItem, 1, 1, in_hands, selected);
+		}
 		return true;
 	}
 
@@ -375,4 +384,45 @@ func Selected(object mnu, object mnu_item)
 	// swap index with backpack index
 	this->Switch2Items(hands_index, backpack_index);
 }
+
+local FxInventorySwitchItem = new Effect
+{
+	Name = "FxInventorySwitchItem",
+
+	Start = func (int temporary, object stash, object draw)
+	{
+		if (!temporary)
+		{
+			this.StashItem = stash; // Stashes this item away
+			this.DrawItem = draw;   // Draws this item
+			var holster = "Holster";
+			var length = this.Target->GetAnimationLength(holster);
+			this.AnimTime = 30;
+			this.Anim = this.Target->PlayAnimation(holster, CLONK_ANIM_SLOT_Arms, Anim_Linear(length, length, 0, this.AnimTime, ANIM_Remove), Anim_Linear(0, 0, 1000, 10, ANIM_Remove));
+		}
+	},
+	
+	Timer = func (int time)
+	{
+		if (this.Target->ReadyToAction())
+		{
+			// Switch items here
+			if (time == this.AnimTime / 2)
+			{
+				this.Target->SetHandItem(this.DrawItem);
+				if (this.DrawItem)
+				{
+					this.Target->SetActiveItem(this.DrawItem);
+				}
+				this.Target->UpdateAttach();
+			}
+
+			if (time < this.AnimTime)
+			{
+				return FX_OK;
+			}
+		}
+		return FX_Execute_Kill;
+	},
+};
 

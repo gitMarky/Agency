@@ -93,6 +93,11 @@ func GetHandItem()
 	return GetItem(this.inventory.active_item);
 }
 
+func SetHandItem(object item)
+{
+	this.inventory.active_item = item;
+}
+
 
 /**
 	This item is selected for holstering/drawing.
@@ -104,6 +109,12 @@ func GetActiveItem()
 	return GetItem(this.inventory.in_hands);
 }
 
+func SetActiveItem(object item)
+{
+	this.inventory.in_hands = item;
+}
+
+
 
 /**
 	This item is carried on the back.
@@ -113,6 +124,11 @@ func GetBackItem()
 	return GetItem(this.inventory.on_back);
 }
 
+func SetBackItem(object item)
+{
+	this.inventory.on_back = item;
+}
+
 
 /**
 	This item is carried in the left hand.
@@ -120,6 +136,11 @@ func GetBackItem()
 func GetCarryOnlyItem()
 {
 	return GetItem(this.inventory.carry_only);
+}
+
+func SetCarryOnlyItem(object item)
+{
+	this.inventory.carry_only = item;
 }
 
 

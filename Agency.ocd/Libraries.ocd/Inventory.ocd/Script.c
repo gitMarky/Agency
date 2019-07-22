@@ -441,6 +441,14 @@ func RejectCollect(id type, object obj)
 					if (obj->Collect(Contents(i),true))
 						return false;
 	}
+	else
+	{
+		// Prevent picking up stuff on the ground.
+		if (!obj->Contained())
+		{
+			return true;
+		}
+	}
 	// Can't carry bucket material with bare hands.
 	if (obj->~IsBucketMaterial()) return true;
 	

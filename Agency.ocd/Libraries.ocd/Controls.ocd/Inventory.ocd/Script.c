@@ -32,21 +32,6 @@ public func OnShiftCursor(object new_cursor)
 }
 
 
-func RejectCollect(id type, object item)
-{
-	var rejected = _inherited(type, item, ...);
-	if (rejected)
-	{
-		return rejected;
-	}
-	else
-	{
-		// Allow collection only if called via clonk->Collect, to prevent picking up stuff on the ground.
-		// Make an exception for containers, though.
-		return !this.inventory.force_collection && !item->Contained();
-	}
-}
-
 public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, int status)
 {
 	if (!this)

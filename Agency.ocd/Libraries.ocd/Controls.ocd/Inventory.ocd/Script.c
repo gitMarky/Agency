@@ -36,7 +36,7 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 {
 	if (!this)
 	{
-		return inherited(plr, ctrl, x, y, strength, repeat, status, ...);
+		return false;
 	}
 
 	// Collection and dropping is only allowed when the Clonk is not contained.
@@ -134,7 +134,14 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 			}
 		}
 	}
-	
+
+	// Holster or unholster
+	if (ctrl == CON_Holster && status == CONS_Down)
+	{
+		Log("Holstering...");
+		return true;
+	}
+
 	// shift inventory
 	var inventory_shift = 0;
 	if (ctrl == CON_InventoryShiftForward)

@@ -5,7 +5,7 @@
 */
 
 // make use of other sub-libraries
-#include Library_ClonkInventoryControl
+#include Character_Control_Inventory
 #include Character_Control_Interaction
 #include Library_ClonkMenuControl
 #include Library_ClonkUseControl
@@ -314,27 +314,6 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 		{
 			HalfVehicleFadeJumpStop();
 		}
-		return true;
-	}
-
-	// hotkeys action bar hotkeys
-	var hot = 0;
-	if (ctrl == CON_InteractionHotkey0) hot = 10;
-	if (ctrl == CON_InteractionHotkey1) hot = 1;
-	if (ctrl == CON_InteractionHotkey2) hot = 2;
-	if (ctrl == CON_InteractionHotkey3) hot = 3;
-	if (ctrl == CON_InteractionHotkey4) hot = 4;
-	if (ctrl == CON_InteractionHotkey5) hot = 5;
-	if (ctrl == CON_InteractionHotkey6) hot = 6;
-	if (ctrl == CON_InteractionHotkey7) hot = 7;
-	if (ctrl == CON_InteractionHotkey8) hot = 8;
-	if (ctrl == CON_InteractionHotkey9) hot = 9;
-
-	if (hot > 0)
-	{
-		this.control.hotkeypressed = true;
-		this->~ControlHotkey(hot-1);
-		this->~StopInteractionCheck(); // for GUI_Controller_ActionBar
 		return true;
 	}
 

@@ -19,10 +19,6 @@ func Construction()
 
 /* Carry items on the clonk */
 
-local iHandMesh;
-local fHandAction;
-local fBothHanded;
-
 // Mesh attachment handling
 local item_display;
 /* Features 4 properties:
@@ -253,17 +249,6 @@ public func GetHandMesh(object obj)
 		return this.item_display.hand_mesh[1];
 }
 
-static const CARRY_None         = 0;
-static const CARRY_Hand         = 1;
-static const CARRY_HandBack     = 2;
-static const CARRY_HandAlways   = 3;
-static const CARRY_Back         = 4;
-static const CARRY_BothHands    = 5;
-static const CARRY_Spear        = 6;
-static const CARRY_Blunderbuss  = 7;
-static const CARRY_Grappler     = 8;
-static const CARRY_Belt         = 9;
-static const CARRY_Sword        = 10;
 
 func HasHandAction(sec, just_wear, bool force_landscape_letgo)
 {

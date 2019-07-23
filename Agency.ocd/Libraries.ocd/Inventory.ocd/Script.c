@@ -90,12 +90,12 @@ func GetItemCount()
 */
 func GetHandItem()
 {
-	return GetItem(this.inventory.active_item);
+	return this.inventory.in_hands;
 }
 
 func SetHandItem(object item)
 {
-	this.inventory.active_item = item;
+	this.inventory.in_hands = item;
 }
 
 
@@ -106,12 +106,12 @@ func SetHandItem(object item)
 */
 func GetActiveItem()
 {
-	return GetItem(this.inventory.in_hands);
+	return this.inventory.active_item;
 }
 
 func SetActiveItem(object item)
 {
-	this.inventory.in_hands = item;
+	this.inventory.active_item = item;
 }
 
 
@@ -121,7 +121,7 @@ func SetActiveItem(object item)
 */
 func GetBackItem()
 {
-	return GetItem(this.inventory.on_back);
+	return this.inventory.on_back;
 }
 
 func SetBackItem(object item)
@@ -135,7 +135,7 @@ func SetBackItem(object item)
 */
 func GetCarryOnlyItem()
 {
-	return GetItem(this.inventory.carry_only);
+	return this.inventory.carry_only;
 }
 
 func SetCarryOnlyItem(object item)

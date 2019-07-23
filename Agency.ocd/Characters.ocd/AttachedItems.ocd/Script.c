@@ -35,12 +35,11 @@ func Construction(object by)
 	_inherited(by, ...);
 
 	this.item_display = {};
-	this.item_display.hand_mesh = nil;
-	this.item_display.back_mesh = nil;
-	this.item_display.side_mesh = nil;
+	this.item_display.hand = { mesh_nr = nil, anim_nr = nil };
+	this.item_display.back = { mesh_nr = nil, anim_nr = nil };
+	this.item_display.side = { mesh_nr = nil, anim_nr = nil };
 	
 	this.item_display.both_handed = false;
-	this.item_display.on_back = false;
 }
 
 
@@ -50,58 +49,42 @@ public func DetachObject(object item)
 {
 	if (this->~GetHandItem() == item)
 	{
-		DetachHandItem();
+		DetachItem(this.item_display.hand);
 	}
 	if (this->~GetCarryOnlyItem() == item)
 	{
-		DetachSideItem();
+		DetachItem(this.item_display.side);
 	}
 	if (this->~GetBackItem() == item)
 	{
-		DetachBackItem();
+		DetachItem(this.item_display.back);
 	}
 }
 
 
-func DetachBackItem()
+func DetachItem(proplist slot)
 {
-	if (this.item_display.back_mesh)
+	if (slot.mesh_nr)
 	{
-		DetachMesh(this.item_display.back_mesh);
-		this.item_display.back_mesh = nil;
+		DetachMesh(slot.mesh_nr);
+		slot.mesh_nr = nil;
 	}
-}
-
-
-func DetachHandItem()
-{
-	if (this.item_display.hand_mesh)
+	if (slot.anim_nr)
 	{
-		DetachMesh(this.item_display.hand_mesh);
-		PlayAnimation("Close2Hand", CLONK_ANIM_SLOT_Hands + CARRY_SLOT_MAIN, Anim_Const(0));
-		this.item_display.hand_mesh = nil;
-	}
-}
-
-
-func DetachSideItem()
-{
-	if (this.item_display.side_mesh)
-	{
-		DetachMesh(this.item_display.side_mesh);
-		PlayAnimation("Close1Hand", CLONK_ANIM_SLOT_Hands + CARRY_SLOT_SIDE, Anim_Const(0));
-		this.item_display.side_mesh = nil;
+		StopAnimation(slot.anim_nr);
+		slot.anim_nr = nil;
 	}
 }
 
 
 func UpdateAttach()
 {
-	StopAnimation(GetRootAnimation(CLONK_ANIM_SLOT_Hands));
-
-	DetachBackItem();
-	DetachHandItem();
-	DetachSideItem();
+	if (this.item_display)
+	{
+		DetachItem(this.item_display.hand);
+		DetachItem(this.item_display.side);
+		DetachItem(this.item_display.back);
+	}
 	
 	UpdateAttachedItem(this->~GetHandItem(), CARRY_SLOT_MAIN);
 	UpdateAttachedItem(this->~GetCarryOnlyItem(), CARRY_SLOT_SIDE);
@@ -116,9 +99,9 @@ func UpdateAttachedItem(object item, int carry_slot)
 	{
 		return;
 	}
-	
+
 	// Determine if hands are blocked
-	var hands_blocked = false;
+	var hands_blocked = !HasActionProcedure();
 	//if (!HasHandAction(sec, 1)) hands_blocked = true;
 	
 
@@ -127,91 +110,75 @@ func UpdateAttachedItem(object item, int carry_slot)
 	{
 		return;
 	}
-	
-	// Determine attachment bones
-	var bone = "main";
-	if (item->~GetCarryBone())
-	{
-		bone  = item->~GetCarryBone(this, carry_slot, hands_blocked);
-	}
-	var bone2;
-	if (item->~GetCarryBone2())
-	{
-		bone2 = item->~GetCarryBone2(this, carry_slot, hands_blocked);
-	}
-	else
-	{
-		bone2 = bone;
-	}
 
+	// Determine attachment bones
+	var attach_item = "main";
+	if (GetType(item.GetCarryBone) == C4V_Function)
+	{
+		attach_item  = item->GetCarryBone(this, carry_slot, hands_blocked);
+	}
 	var transform = item->~GetCarryTransform(this, carry_slot, hands_blocked);
 
-	var pos_hand = "pos_hand2";
-	//if (sec) pos_hand = "pos_hand1";
-	var pos_back = "pos_back1";
-	//if (sec) pos_back = "pos_back2";
-	var closehand = "Close2Hand";
-	//if (sec) closehand = "Close1Hand";
-	var pos_belt = "skeleton_leg_upper.R";
-	//if (sec) pos_belt = "skeleton_leg_upper.L";
-
-
-	if (attach_mode == CARRY_Hand || attach_mode == CARRY_HandBack || attach_mode == CARRY_HandAlways)
+	// Determine attachment at 
+	var attach_user;
+	var animation_name;
+	var slot;
+	if (carry_slot == CARRY_SLOT_MAIN)
 	{
-		this.item_display.hand_mesh = AttachMesh(item, pos_hand, bone, transform);
-		PlayAnimation(closehand, CLONK_ANIM_SLOT_Hands + carry_slot, Anim_Const(GetAnimationLength(closehand)));
+		attach_user = "pos_hand2";
+		animation_name = "Close2Hand";
+		slot = this.item_display.hand;
 	}
-	else if (attach_mode == CARRY_Back)
+	else if (carry_slot == CARRY_SLOT_SIDE)
 	{
-		this.item_display.hand_mesh = AttachMesh(item, pos_back, bone2, transform);
+		attach_user = "pos_hand1";
+		animation_name = "Close1Hand";
+		slot = this.item_display.side;
 	}
-	else if (attach_mode == CARRY_BothHands)
+	else if (carry_slot == CARRY_SLOT_BACK)
 	{
-			this.item_display.hand_mesh = AttachMesh(item, "pos_tool1", bone, transform);
-			PlayAnimation("CarryArms", CLONK_ANIM_SLOT_Hands + carry_slot, Anim_Const(item->~GetCarryPhase(this)));
-			this.item_display.both_handed = true;
+		attach_user = "pos_back1";
+		// No animation
+		slot = this.item_display.back;
+	}
+	var animation_phase = Anim_Const(0);
+	if (animation_name)
+	{
+		animation_phase = Anim_Const(GetAnimationLength(animation_name));
+	}
+
+	// Modify settings for special carry modes
+	if (attach_mode == CARRY_BothHands)
+	{
+		attach_user = "pos_tool1";
+		animation_name = "CarryArms";
+		animation_phase = Anim_Const(item->~GetCarryPhase(this));
+		this.item_display.both_handed = true;
 	}
 	else if (attach_mode == CARRY_Spear)
 	{
 		// This is a one sided animation, so switch to back if not in the main hand
 		if (carry_slot == CARRY_SLOT_MAIN)
 		{
-			this.item_display.hand_mesh[sec] = AttachMesh(item, pos_hand, bone, transform);
-			PlayAnimation("CarrySpear", CLONK_ANIM_SLOT_Hands + carry_slot, Anim_Const(0));
-		}
-		else
-		{
-			this.item_display.hand_mesh[sec] = AttachMesh(item, pos_back, bone2, transform);
+			animation_name = "CarrySpear";
+			animation_phase = Anim_Const(0);
 		}
 	}
 	else if (attach_mode == CARRY_Blunderbuss)
 	{
-		if (!hands_blocked)
-		{
-			this.item_display.hand_mesh[sec] = AttachMesh(item, "pos_hand2", bone, transform);
-			PlayAnimation("CarryMusket", CLONK_ANIM_SLOT_Hands + sec, Anim_Const(0), Anim_Const(1000));
-			this.item_display.both_handed = true;
-		}
-		else
-		{
-			this.item_display.hand_mesh[sec] = AttachMesh(item, pos_back, bone2, transform);
-		}
+		animation_name = "CarryMusket";
+		animation_phase = Anim_Const(0);
+		this.item_display.both_handed = true;
 	}
 	else if (attach_mode == CARRY_Grappler)
 	{
-		if (!hands_blocked)
-		{
-			this.item_display.hand_mesh[sec] = AttachMesh(item, "pos_hand2", bone, transform);
-			PlayAnimation("CarryCrossbow", CLONK_ANIM_SLOT_Hands + sec, Anim_Const(0), Anim_Const(1000));
-			this.item_display.both_handed = true;
-		}
-		else
-		{
-			this.item_display.hand_mesh[sec] = AttachMesh(item, pos_back, bone2, transform);
-		}
+		animation_name = "CarryCrossbow";
+		animation_phase = Anim_Const(0);
+		this.item_display.both_handed = true;
 	}
 	else if (attach_mode == CARRY_Belt)
 	{
+		attach_user =  "skeleton_leg_upper.R";;
 		// Do some extra transforms for this kind of carrying
 		if (transform)
 		{
@@ -221,11 +188,17 @@ func UpdateAttachedItem(object item, int carry_slot)
 		{
 			transform = Trans_Mul(Trans_Rotate(160, 0, 0, 1), Trans_Rotate(5, 0, 1), Trans_Rotate(30, 1), Trans_Translate(-2500, 0, 800), Trans_Scale(700));
 		}
-		this.item_display.hand_mesh = AttachMesh(item, pos_belt, bone, transform);
 	}
 	else if (attach_mode == CARRY_Sword)
 	{
-		this.item_display.hand_mesh = AttachMesh(item, "skeleton_hips", bone, transform);
+		attach_user = "skeleton_hips";
+	}
+	
+	// Attach the mesh
+	slot.mesh_nr = AttachMesh(item, attach_user, attach_item, transform);
+	if (animation_name)
+	{
+		slot.anim_nr = PlayAnimation(animation_name, CLONK_ANIM_SLOT_Hands + carry_slot, animation_phase);
 	}
 }
 

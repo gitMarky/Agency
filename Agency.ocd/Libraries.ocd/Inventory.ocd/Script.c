@@ -11,11 +11,11 @@
 	The functions return:
 	- GetHandItem() returns the object in the (right) hand. This is the
 	  item that you will use by default.
-	- GetOffHandItem() returns the object in the (left) hand. This is
+	- GetCarryOnlyItem() returns the object in the (left) hand. This is
 	  an item that is too just carried and is too larget to sling on
 	  the back.
 	- GetBackItem() returns the object that is carried on your back.
-	- GetSelectedItem() returns the object that is selected.
+	- GetActiveItem() returns the object that is selected.
 
 	used properties:
 	this.inventory.objects: items in the inventory, array

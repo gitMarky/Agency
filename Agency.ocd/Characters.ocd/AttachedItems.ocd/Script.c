@@ -1,26 +1,16 @@
 /**
 	Logic for displaying items in the hand.
 	
-	COpied from Objects.ocd
---*/
+	Copied from Objects.ocd
+*/
 
-
-func Construction()
-{
-	_inherited(...);
-
-	this.item_display = {};
-	this.item_display.hand_mesh = [0, 0];
-	this.item_display.hand_action = 0;
-	this.item_display.both_handed = false;
-	this.item_display.on_back = false;
-}
-
+static const CARRY_SLOT_MAIN = 0;
+static const CARRY_SLOT_SIDE = 1;
+static const CARRY_SLOT_BACK = 3;
 
 /* Carry items on the clonk */
 
 // Mesh attachment handling
-local item_display;
 /* Features 4 properties:
 	hand_mesh: Array of attachment numbers for items on the clonk.
 	hand_action: Determines whether the clonk's hands are busy if items can be used.
@@ -32,245 +22,213 @@ local item_display;
 	on_back: The first item is currently on the clonk's back, so draw the second one differently (if it also goes on the back).
 */
 
-func OnSelectionChanged(int oldslot, int newslot, bool secondaryslot)
+
+/* --- Properties --- */
+
+local item_display;
+
+
+/* --- Engine Callbacks --- */
+
+func Construction(object by)
 {
-	AttachHandItem(secondaryslot);
-	return _inherited(oldslot, newslot, secondaryslot);
-}
-func OnSlotEmpty(int slot)
-{
-	AttachHandItem(slot);
-	return _inherited(slot);
-}
-func OnSlotFull(int slot)
-{
-	AttachHandItem(slot);
-	return _inherited(slot);
+	_inherited(by, ...);
+
+	this.item_display = {};
+	this.item_display.hand_mesh = nil;
+	this.item_display.back_mesh = nil;
+	this.item_display.side_mesh = nil;
+	
+	this.item_display.both_handed = false;
+	this.item_display.on_back = false;
 }
 
-public func DetachObject(object obj)
-{
-	if (this->GetHandItem(0) == obj)
-		DetachHandItem(0);
-	if (this->GetHandItem(1) == obj)
-		DetachHandItem(1);
-}
 
-func DetachHandItem(bool secondary)
+/* --- Attach & Detach --- */
+
+public func DetachObject(object item)
 {
-	if (this.item_display.hand_mesh[secondary])
+	if (this->~GetHandItem() == item)
 	{
-		DetachMesh(this.item_display.hand_mesh[secondary]);
-		var anim = "Close2Hand";
-		if (secondary) anim = "Close1Hand";
-		PlayAnimation(anim, CLONK_ANIM_SLOT_Hands + secondary, Anim_Const(0));
+		DetachHandItem();
 	}
-	this.item_display.hand_mesh[secondary] = 0;
+	if (this->~GetCarryOnlyItem() == item)
+	{
+		DetachSideItem();
+	}
+	if (this->~GetBackItem() == item)
+	{
+		DetachBackItem();
+	}
 }
 
-func AttachHandItem(bool secondary)
+
+func DetachBackItem()
 {
-	DetachHandItem(secondary);
-	UpdateAttach();
+	if (this.item_display.back_mesh)
+	{
+		DetachMesh(this.item_display.back_mesh);
+		this.item_display.back_mesh = nil;
+	}
 }
+
+
+func DetachHandItem()
+{
+	if (this.item_display.hand_mesh)
+	{
+		DetachMesh(this.item_display.hand_mesh);
+		PlayAnimation("Close2Hand", CLONK_ANIM_SLOT_Hands + CARRY_SLOT_MAIN, Anim_Const(0));
+		this.item_display.hand_mesh = nil;
+	}
+}
+
+
+func DetachSideItem()
+{
+	if (this.item_display.side_mesh)
+	{
+		DetachMesh(this.item_display.side_mesh);
+		PlayAnimation("Close1Hand", CLONK_ANIM_SLOT_Hands + CARRY_SLOT_SIDE, Anim_Const(0));
+		this.item_display.side_mesh = nil;
+	}
+}
+
 
 func UpdateAttach()
 {
 	StopAnimation(GetRootAnimation(CLONK_ANIM_SLOT_Hands));
 
-	if (this.item_display && this.item_display.hand_mesh)
-	{
-		DetachHandItem(0);
-		DetachHandItem(1);
-	}
-
-	DoUpdateAttach(0);
-	DoUpdateAttach(1);
+	DetachBackItem();
+	DetachHandItem();
+	DetachSideItem();
+	
+	UpdateAttachedItem(this->~GetHandItem(), CARRY_SLOT_MAIN);
+	UpdateAttachedItem(this->~GetCarryOnlyItem(), CARRY_SLOT_SIDE);
+	UpdateAttachedItem(this->~GetBackItem(), CARRY_SLOT_BACK);
 }
 
-func DoUpdateAttach(int sec)
+
+func UpdateAttachedItem(object item, int carry_slot)
 {
-	var obj = this->GetHandItem(sec);
-	var other_obj = this->GetHandItem(!sec);
-	if (!obj) return;
-
-	var attach_mode = obj->~GetCarryMode(this, sec);
-	if (attach_mode == CARRY_None) return;
-
-	if (!sec)
+	// Cancel display?
+	if (!item)
 	{
-		this.item_display.both_handed = false;
-		this.item_display.on_back = false;
+		return;
 	}
-
-	if (this.item_display.hand_mesh[sec])
-	{
-		DetachMesh(this.item_display.hand_mesh[sec]);
-		this.item_display.hand_mesh[sec] = 0;
-	}
-
-	var bone = "main";
-	var bone2;
-	if (obj->~GetCarryBone())  bone  = obj->~GetCarryBone(this, sec);
-	if (obj->~GetCarryBone2()) bone2 = obj->~GetCarryBone2(this, sec);
-	else bone2 = bone;
-	var nohand = false;
-	if (!HasHandAction(sec, 1)) nohand = true;
 	
-	var trans = obj->~GetCarryTransform(this, sec, nohand, this.item_display.on_back);
+	// Determine if hands are blocked
+	var hands_blocked = false;
+	//if (!HasHandAction(sec, 1)) hands_blocked = true;
+	
+
+	var attach_mode = item->~GetCarryMode(this, carry_slot, hands_blocked);
+	if (attach_mode == CARRY_None)
+	{
+		return;
+	}
+	
+	// Determine attachment bones
+	var bone = "main";
+	if (item->~GetCarryBone())
+	{
+		bone  = item->~GetCarryBone(this, carry_slot, hands_blocked);
+	}
+	var bone2;
+	if (item->~GetCarryBone2())
+	{
+		bone2 = item->~GetCarryBone2(this, carry_slot, hands_blocked);
+	}
+	else
+	{
+		bone2 = bone;
+	}
+
+	var transform = item->~GetCarryTransform(this, carry_slot, hands_blocked);
 
 	var pos_hand = "pos_hand2";
-	if (sec) pos_hand = "pos_hand1";
+	//if (sec) pos_hand = "pos_hand1";
 	var pos_back = "pos_back1";
-	if (sec) pos_back = "pos_back2";
+	//if (sec) pos_back = "pos_back2";
 	var closehand = "Close2Hand";
-	if (sec) closehand = "Close1Hand";
+	//if (sec) closehand = "Close1Hand";
 	var pos_belt = "skeleton_leg_upper.R";
-	if (sec) pos_belt = "skeleton_leg_upper.L";
+	//if (sec) pos_belt = "skeleton_leg_upper.L";
 
-	var special = obj->~GetCarrySpecial(this);
-	var special_other;
-	if (other_obj) special_other = other_obj->~GetCarrySpecial(this, sec);
-	if (special)
-	{
-		this.item_display.hand_mesh[sec] = AttachMesh(obj, special, bone, trans);
-		attach_mode = 0;
-	}
 
-	if (attach_mode == CARRY_Hand)
+	if (attach_mode == CARRY_Hand || attach_mode == CARRY_HandBack || attach_mode == CARRY_HandAlways)
 	{
-		if (HasHandAction(sec, 1))
-		{
-			this.item_display.hand_mesh[sec] = AttachMesh(obj, pos_hand, bone, trans);
-			PlayAnimation(closehand, CLONK_ANIM_SLOT_Hands + sec, Anim_Const(GetAnimationLength(closehand)));
-		}
-	}
-	else if (attach_mode == CARRY_HandBack)
-	{
-		if (HasHandAction(sec, 1))
-		{
-			this.item_display.hand_mesh[sec] = AttachMesh(obj, pos_hand, bone, trans);
-			PlayAnimation(closehand, CLONK_ANIM_SLOT_Hands + sec, Anim_Const(GetAnimationLength(closehand)));
-		}
-		else
-		{
-			this.item_display.hand_mesh[sec] = AttachMesh(obj, pos_back, bone2, trans);
-			if (!sec)
-				this.item_display.on_back = true;
-		}
-	}
-	else if (attach_mode == CARRY_HandAlways)
-	{
-		this.item_display.hand_mesh[sec] = AttachMesh(obj, pos_hand, bone, trans);
-		PlayAnimation(closehand, CLONK_ANIM_SLOT_Hands + sec, Anim_Const(GetAnimationLength(closehand)));
+		this.item_display.hand_mesh = AttachMesh(item, pos_hand, bone, transform);
+		PlayAnimation(closehand, CLONK_ANIM_SLOT_Hands + carry_slot, Anim_Const(GetAnimationLength(closehand)));
 	}
 	else if (attach_mode == CARRY_Back)
 	{
-		this.item_display.hand_mesh[sec] = AttachMesh(obj, pos_back, bone2, trans);
-		if (!sec)
-			this.item_display.on_back = true;
+		this.item_display.hand_mesh = AttachMesh(item, pos_back, bone2, transform);
 	}
 	else if (attach_mode == CARRY_BothHands)
 	{
-		if (sec) return;
-
-		if (HasHandAction(sec, 1) && !sec && !special_other)
-		{
-			this.item_display.hand_mesh[sec] = AttachMesh(obj, "pos_tool1", bone, trans);
-			PlayAnimation("CarryArms", CLONK_ANIM_SLOT_Hands + sec, Anim_Const(obj->~GetCarryPhase(this)));
+			this.item_display.hand_mesh = AttachMesh(item, "pos_tool1", bone, transform);
+			PlayAnimation("CarryArms", CLONK_ANIM_SLOT_Hands + carry_slot, Anim_Const(item->~GetCarryPhase(this)));
 			this.item_display.both_handed = true;
-		}
 	}
 	else if (attach_mode == CARRY_Spear)
 	{
 		// This is a one sided animation, so switch to back if not in the main hand
-		if (HasHandAction(sec, 1) && !sec)
+		if (carry_slot == CARRY_SLOT_MAIN)
 		{
-			this.item_display.hand_mesh[sec] = AttachMesh(obj, pos_hand, bone, trans);
-			PlayAnimation("CarrySpear", CLONK_ANIM_SLOT_Hands + sec, Anim_Const(0));
+			this.item_display.hand_mesh[sec] = AttachMesh(item, pos_hand, bone, transform);
+			PlayAnimation("CarrySpear", CLONK_ANIM_SLOT_Hands + carry_slot, Anim_Const(0));
 		}
 		else
 		{
-			this.item_display.hand_mesh[sec] = AttachMesh(obj, pos_back, bone2, trans);
-			if (!sec)
-				this.item_display.on_back = true;
+			this.item_display.hand_mesh[sec] = AttachMesh(item, pos_back, bone2, transform);
 		}
 	}
 	else if (attach_mode == CARRY_Blunderbuss)
 	{
-		if (HasHandAction(sec, 1) && !sec)
+		if (!hands_blocked)
 		{
-			this.item_display.hand_mesh[sec] = AttachMesh(obj, "pos_hand2", bone, trans);
+			this.item_display.hand_mesh[sec] = AttachMesh(item, "pos_hand2", bone, transform);
 			PlayAnimation("CarryMusket", CLONK_ANIM_SLOT_Hands + sec, Anim_Const(0), Anim_Const(1000));
 			this.item_display.both_handed = true;
 		}
 		else
 		{
-			this.item_display.hand_mesh[sec] = AttachMesh(obj, pos_back, bone2, trans);
-			if (!sec)
-				this.item_display.on_back = true;
+			this.item_display.hand_mesh[sec] = AttachMesh(item, pos_back, bone2, transform);
 		}
 	}
 	else if (attach_mode == CARRY_Grappler)
 	{
-		if (HasHandAction(sec, 1) && !sec)
+		if (!hands_blocked)
 		{
-			this.item_display.hand_mesh[sec] = AttachMesh(obj, "pos_hand2", bone, trans);
+			this.item_display.hand_mesh[sec] = AttachMesh(item, "pos_hand2", bone, transform);
 			PlayAnimation("CarryCrossbow", CLONK_ANIM_SLOT_Hands + sec, Anim_Const(0), Anim_Const(1000));
 			this.item_display.both_handed = true;
 		}
 		else
 		{
-			this.item_display.hand_mesh[sec] = AttachMesh(obj, pos_back, bone2, trans);
-			if (!sec)
-				this.item_display.on_back = true;
+			this.item_display.hand_mesh[sec] = AttachMesh(item, pos_back, bone2, transform);
 		}
 	}
 	else if (attach_mode == CARRY_Belt)
 	{
 		// Do some extra transforms for this kind of carrying
-		if (trans)
-			trans = Trans_Mul(trans, Trans_Rotate(160, 0, 0, 1), Trans_Rotate(5, 0, 1), Trans_Rotate(30, 1), Trans_Translate(-2500, 0, 700), Trans_Scale(700));
+		if (transform)
+		{
+			transform = Trans_Mul(transform, Trans_Rotate(160, 0, 0, 1), Trans_Rotate(5, 0, 1), Trans_Rotate(30, 1), Trans_Translate(-2500, 0, 700), Trans_Scale(700));
+		}
 		else
-			trans = Trans_Mul(Trans_Rotate(160, 0, 0, 1), Trans_Rotate(5, 0, 1), Trans_Rotate(30, 1), Trans_Translate(-2500, 0, 800), Trans_Scale(700));
-		this.item_display.hand_mesh[sec] = AttachMesh(obj, pos_belt, bone, trans);
+		{
+			transform = Trans_Mul(Trans_Rotate(160, 0, 0, 1), Trans_Rotate(5, 0, 1), Trans_Rotate(30, 1), Trans_Translate(-2500, 0, 800), Trans_Scale(700));
+		}
+		this.item_display.hand_mesh = AttachMesh(item, pos_belt, bone, transform);
 	}
 	else if (attach_mode == CARRY_Sword)
 	{
-		this.item_display.hand_mesh[sec] = AttachMesh(obj, "skeleton_hips", bone, trans);
+		this.item_display.hand_mesh = AttachMesh(item, "skeleton_hips", bone, transform);
 	}
 }
 
-public func GetHandMesh(object obj)
-{
-	if (this->GetHandItem(0) == obj)
-		return this.item_display.hand_mesh[0];
-	if (this->GetHandItem(1) == obj)
-		return this.item_display.hand_mesh[1];
-}
-
-
-func HasHandAction(sec, just_wear, bool force_landscape_letgo)
-{
-	// Check if the clonk is currently able to use hands
-	// sec: Needs both hands (e.g. CarryHeavy?)
-	// just_wear: ???
-	// force_landscape_letgo: Also allow from actions where hands are currently grabbing the landscape (scale, hangle)
-	if (sec && this.item_display.both_handed)
-		return false;
-	if (just_wear)
-	{
-		if ( HasActionProcedure(force_landscape_letgo) && !this.item_display.hand_action )
-		// For wear purpose this.item_display.hand_action==-1 also blocks
-			return true;
-	}
-	else
-	{
-		if ( HasActionProcedure(force_landscape_letgo) && (!this.item_display.hand_action || this.item_display.hand_action == -1) )
-			return true;
-	}
-	return false;
-}
 
 func HasActionProcedure(bool force_landscape_letgo)
 {
@@ -278,33 +236,18 @@ func HasActionProcedure(bool force_landscape_letgo)
 	// if force_landscape_letgo is true, also allow during scale/hangle assuming the clonk will let go
 	var action = GetAction();
 	if (action == "Walk" || action == "Jump" || action == "WallJump" || action == "Kneel" || action == "Ride" || action == "BridgeStand")
+	{
 		return true;
+	}
 	if (force_landscape_letgo) if (action == "Scale" || action == "Hangle")
+	{
 		return true;
+	}
 	return false;
 }
 
 public func ReadyToAction(fNoArmCheck)
 {
-	if (!fNoArmCheck)
-		return HasActionProcedure();
-	return HasHandAction(0);
+	return HasActionProcedure();
 }
 
-public func SetHandAction(bool fNewValue)
-{
-	if (fNewValue > 0)
-		this.item_display.hand_action = 1; // 1 means can't use items and doesn't draw items in hand
-	else if (fNewValue < 0)
-		this.item_display.hand_action = -1; // just don't draw items in hand can still use them
-	else
-		this.item_display.hand_action = 0;
-	UpdateAttach();
-}
-
-public func GetHandAction()
-{
-	if (this.item_display.hand_action == 1)
-		return true;
-	return false;
-}

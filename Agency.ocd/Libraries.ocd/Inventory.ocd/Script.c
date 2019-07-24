@@ -294,7 +294,8 @@ func Ejection(object item)
 	}
 	
 	// Get new active item?
-	TrySelectActiveItem();
+	var type = item->GetID();
+	TrySelectActiveItem(nil, type);
 	
 	// Callbacks
 	this->~UpdateAttach();	
@@ -302,12 +303,12 @@ func Ejection(object item)
 }
 
 
-func ContentsDestruction(object obj)
+func ContentsDestruction(object item)
 {
 	// tell the Hud that something changed
-	TrySelectActiveItem();
+	TrySelectActiveItem(nil, item->GetID());
 	this->~OnInventoryChange();
-	_inherited(obj, ...);
+	_inherited(item, ...);
 }
 
 func RejectCollect(id type, object obj)
@@ -377,7 +378,7 @@ func GrabContents(object source, ...)
 	return inherited(source, ...);
 }
 
-func TrySelectActiveItem(object candidate)
+func TrySelectActiveItem(object candidate, id preferred_type)
 {
 	if (GetActiveItem())
 	{
@@ -387,9 +388,19 @@ func TrySelectActiveItem(object candidate)
 	candidate = candidate ?? GetHandItem();
 	if (!candidate)
 	{
-		for (var i = 0; i < ContentsCount(); ++i)
+		var contents = Find_Container(this);
+		var candidates;
+		if (preferred_type)
 		{
-			var item = Contents(i);
+			candidates = FindObjects(contents, Find_ID(preferred_type));
+			PushBack(candidates, FindObjects(contents, Find_Not(Find_ID())));
+		}
+		else
+		{
+			candidates = FindObjects(contents);
+		}
+		for (var item in candidates)
+		{
 			if (item == GetHandItem() || item == GetBackItem() || item == GetCarryOnlyItem())
 			{
 				continue;

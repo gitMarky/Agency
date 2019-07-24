@@ -275,7 +275,8 @@ func Ejection(object item)
 	}
 
 	// Delete item from inventory
-	if (GetHandItem() == item)
+	var was_in_hand = GetHandItem() == item;
+	if (was_in_hand)
 	{
 		item->~Deselection(this);
 		SetHandItem(nil);
@@ -295,7 +296,7 @@ func Ejection(object item)
 	
 	// Get new active item?
 	var type = item->GetID();
-	TrySelectActiveItem(nil, type);
+	TrySelectActiveItem(nil, type, was_in_hand);
 	
 	// Callbacks
 	this->~UpdateAttach();	
@@ -305,8 +306,11 @@ func Ejection(object item)
 
 func ContentsDestruction(object item)
 {
-	// tell the Hud that something changed
-	TrySelectActiveItem(nil, item->GetID());
+	if (item == GetActiveItem())
+	{
+		SetActiveItem(nil);
+	}
+	TrySelectActiveItem(nil, item->GetID(), item == GetActiveItem());
 	this->~OnInventoryChange();
 	_inherited(item, ...);
 }
@@ -378,14 +382,18 @@ func GrabContents(object source, ...)
 	return inherited(source, ...);
 }
 
-func TrySelectActiveItem(object candidate, id preferred_type)
+func TrySelectActiveItem(object candidate, id preferred_type, bool was_in_hands)
 {
 	if (GetActiveItem())
 	{
 		return;
 	}
-	
-	candidate = candidate ?? GetHandItem();
+
+	if (!candidate && GetHandItem())
+	{
+		candidate = GetHandItem();
+		was_in_hands = false; // Actually 'true' but there is no need to set it again in the end
+	}
 	if (!candidate)
 	{
 		var contents = Find_Container(this);
@@ -410,4 +418,8 @@ func TrySelectActiveItem(object candidate, id preferred_type)
 		}
 	}
 	SetActiveItem(candidate);
+	if (was_in_hands)
+	{
+		SetHandItem(candidate);
+	}
 }

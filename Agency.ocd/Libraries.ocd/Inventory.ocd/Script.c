@@ -19,12 +19,11 @@
 
 	used properties:
 	this.inventory.objects: items in the inventory, array
-	this.inventory.disableautosort: used to get default-Collection-behaviour (see Collection2)
 	this.inventory.force_collection: used to pick stuff up, even though the hand-slots are all full (see RejectCollect + Collect with CON_Collect)
-	this.inventory.in_hands: item index
-	this.inventory.on_back: item index
-	this.inventory.active_item: itemindex
-	this.inventory.carry_only; item index
+	this.inventory.in_hands: item in right hand
+	this.inventory.on_back: item on back
+	this.inventory.active_item: item that is selected (and in hands if drawn)
+	this.inventory.carry_only; item in the left hand
 */
 
 /* --- Engine Callbacks --- */
@@ -36,7 +35,6 @@ func Construction(object by)
 		this.inventory = {};
 	}
 	this.inventory.objects = [];
-	this.inventory.disableautosort = false;
 	this.inventory.force_collection = false;
 	this.inventory.in_hands = nil;
 	this.inventory.on_back = nil;
@@ -337,14 +335,12 @@ func Collect(object item, bool ignoreOCF, int pos, bool force)
 	{
 		if (item)
 		{
-			this.inventory.disableautosort = true;
 			// Collect but do not sort in_
 			// Collection2 will be called which attempts to automatically sort in
 			// the collected item into the next free inventory slot. Since 'pos'
 			// is given as a parameter, we don't want that to happen and sort it
 			// in manually afterwards
 			var success = _inherited(item);
-			this.inventory.disableautosort = false;
 			if (success)
 			{
 				this.inventory.objects[pos] = item;
@@ -359,13 +355,6 @@ func Collect(object item, bool ignoreOCF, int pos, bool force)
 
 func Collection2(object obj)
 {
-
-	// See Collect()
-	if (this.inventory.disableautosort)
-	{
-		return _inherited(obj,...);
-	}
-
 	var sel = 0;
 	var success = false;
 

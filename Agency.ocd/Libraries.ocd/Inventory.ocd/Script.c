@@ -231,114 +231,81 @@ public func Switch2Items(int one, int two)
 
 /**
 	Overload of Collect function
-	Allows inventory/hands-Handling with forced-collection
+	Allows blocking collection via RejectCollect
 */
-func Collect(object item, bool ignoreOCF, int pos, bool force)
+func Collect(object item, bool ignoreOCF, bool force)
 {
 	// Whenever a script calls the Collect function manually, an intended force is assumed.
-	// That means, items will usually be collected with Collect() even if the current hand-slot is not free.
-	force = force ?? true;
-	
-	this.inventory.force_collection = force;
-	var success = false;
-	if (pos == nil || item->~IsCarryHeavy())
-	{
-		success = _inherited(item, ignoreOCF);
-		this.inventory.force_collection = false;
-		return success;
-	}
-	// Fail if the specified slot is full
-	if (GetItem(pos) == nil && pos >= 0)
-	{
-		if (item)
-		{
-			// Collect but do not sort in_
-			// Collection2 will be called which attempts to automatically sort in
-			// the collected item into the next free inventory slot. Since 'pos'
-			// is given as a parameter, we don't want that to happen and sort it
-			// in manually afterwards
-			var success = _inherited(item);
-			if (success)
-			{
-				this.inventory.objects[pos] = item;
-			}
-		}
-	}
-	
+	// That means, items will usually be collected with Collect().
+	this.inventory.force_collection = force ?? true;
+	var success = _inherited(item, ignoreOCF);
 	this.inventory.force_collection = false;
 	return success;
 }
 
 
-func Collection2(object obj)
+func Collection2(object item)
 {
-	var sel = 0;
-	var success = false;
+	TrySelectActiveItem(item);
 
-	// Sort into selected hands if empty
-
-	// Otherwise, first empty slot, expand inventory by 1 if necessary
-	for (var i = 0; i <= GetLength(this.inventory.objects); ++i)
+	// OnSlotFull might have done something to obj
+	if (GetActiveItem() == item)
 	{
-		if (!GetItem(i))
-		{
-			sel = i;
-			this.inventory.objects[sel] = obj;
-			success = true;
-			break;
-		}
-	}
-	
-	// Callbacks
-	if (success)
-	{
-		// OnSlotFull might have done something to obj
-		if (GetActiveItem() == obj)
-		{
-			obj->~Selection(this);
-		}
+		item->~Selection(this);
 	}
 
-	return _inherited(obj,...);
+	return _inherited(item, ...);
 }
 
 
-func Ejection(object obj)
+func Ejection(object item)
 {
 	// If an object leaves this object
 	// find obj in array and delete (cancel using too)
-	var success = false;
-
-	var pos = GetItemPos(obj);
+	var pos = GetItemPos(item);
 	if (pos != nil)
 	{
 		this.inventory.objects[pos] = nil;
-		success = true;
 	}
 
     // Variable declared in ClonkControl.ocd
-	if (this.control.current_object == obj)
+	if (this->~GetUsedObject() == item)
 	{
 		this->~CancelUse();
 	}
 
-	// Callbacks
-	if (success)
+	// Delete item from inventory
+	if (GetHandItem() == item)
 	{
-		if (GetHandItem() == obj)
-		{
-			obj->~Deselection(this);
-		}
-		this->~UpdateAttach();
+		item->~Deselection(this);
+		SetHandItem(nil);
+	}
+	if (GetActiveItem() == item)
+	{
+		SetActiveItem(nil);
+	}
+	if (GetBackItem() == item)
+	{
+		SetBackItem(nil);
+	}
+	if (GetCarryOnlyItem() == item)
+	{
+		SetCarryOnlyItem(nil);
 	}
 	
-	_inherited(obj,...);
+	// Get new active item?
+	TrySelectActiveItem();
+	
+	// Callbacks
+	this->~UpdateAttach();	
+	_inherited(item, ...);
 }
 
 
 func ContentsDestruction(object obj)
 {
 	// tell the Hud that something changed
+	TrySelectActiveItem();
 	this->~OnInventoryChange();
 	_inherited(obj, ...);
 }
@@ -377,7 +344,10 @@ func RejectCollect(id type, object obj)
 		}
 	}
 	// Can't carry bucket material with bare hands.
-	if (obj->~IsBucketMaterial()) return true;
+	if (obj->~IsBucketMaterial())
+	{
+		return true;
+	}
 	
 	return _inherited(type, obj,...);
 }
@@ -407,3 +377,26 @@ func GrabContents(object source, ...)
 	return inherited(source, ...);
 }
 
+func TrySelectActiveItem(object candidate)
+{
+	if (GetActiveItem())
+	{
+		return;
+	}
+	
+	candidate = candidate ?? GetHandItem();
+	if (!candidate)
+	{
+		for (var i = 0; i < ContentsCount(); ++i)
+		{
+			var item = Contents(i);
+			if (item == GetHandItem() || item == GetBackItem() || item == GetCarryOnlyItem())
+			{
+				continue;
+			}
+			candidate = item;
+			break;
+		}
+	}
+	SetActiveItem(candidate);
+}

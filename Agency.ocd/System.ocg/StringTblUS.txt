@@ -1,0 +1,6 @@
+
+CON_Holster_Name=Holster
+CON_Holster_Desc=Draws an item from your holster, or holsters a drawn item.
+
+CON_Interact_Name=Interact
+CON_Interact_Desc=Performs an interaction with the environment.

@@ -2,9 +2,14 @@
 
 	[ControlDef]
 	Identifier=Attack
-	GUIName=$CON_Interact$
+	GUIName=$CON_Interact_Name$
 	GUIDesc=$CON_Interact_Desc$
 	Hold=1
+
+	[ControlDef]
+	Identifier=Holster
+	GUIName=$CON_Holster_Name$
+	GUIDesc=$CON_Holster_Desc$
 
 
 [ControlSets]
@@ -27,6 +32,10 @@
 		[Assignment]
 		Key=F
 		Control=PickUp
+
+		[Assignment]
+		Key=H
+		Control=Holster
 
 		[Assignment]
 		Key=P

@@ -157,19 +157,23 @@ func IsCollecting()
 
 
 /**
-	Drops the item in the inventory slot, if any
+	Drops the item , if any
 */
-func DropInventoryItem(int slot)
+func DropItem(object item)
 {
-	var item = GetItem(slot);
 	if (!item || item->~QueryRejectDeparture(this))
 	{
-		return nil;
+		return false;
 	}
 	// Notify other libraries of deliberate drop.
 	this->~OnDropped(item);
 	// And make the engine drop the object.
-	this->AddCommand("Drop", item);
+	//this->AddCommand("Drop", item);
+	if (item)
+	{
+		item->Exit(0, 8);
+	}
+	return true;
 }
 
 
@@ -458,7 +462,30 @@ func DoHolsterHandItem(bool reset_active_item)
 	var item = GetHandItem();
 	if (item)
 	{
+		if (item->~IsCarryOnly())
+		{
+			if (reset_active_item)
+			{
+				DropItem(item);
+			}
+			else
+			{
+				return;
+			}
+		}
+		else if (item->~IsLargeItem())
+		{
+			if (GetBackItem())
+			{
+				DropItem(item);
+			}
+			else
+			{
+				SetBackItem(item);
+			}
+		}
 		SetHandItem(nil);
+
 		if (reset_active_item)
 		{
 			SetActiveItem(nil);

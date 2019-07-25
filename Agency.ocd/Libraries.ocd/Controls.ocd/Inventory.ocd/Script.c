@@ -144,7 +144,7 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 		{
 			selected = nil;
 		}
-		if (!GetEffect(FxInventorySwitchItem.Name, this))
+		if (Contents() && !GetEffect(FxInventorySwitchItem.Name, this))
 		{
 			CreateEffect(FxInventorySwitchItem, 1, 1, in_hands, selected);
 		}

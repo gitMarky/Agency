@@ -320,6 +320,41 @@ func EndPickingUp()
 // Shows an effect when you picked up an item.
 func TryToCollect(object item)
 {
+	if (!GetEffect(FxPickUpItem.Name, this))
+	{
+		CreateEffect(FxPickUpItem, 1, 20, item);
+	}
+}
+
+
+local FxPickUpItem = new Effect
+{
+	Name = "FxPickUpItem",
+
+	Start = func (int temporary, object item)
+	{
+		if (!temporary)
+		{
+			this.Item = item;
+			this.Target->~DoHolsterHandItem();
+		}
+	},
+
+	Timer = func ()
+	{
+		this.Target->~TryToPickUp(this.Item);
+		return FX_Execute_Kill;
+	},
+};
+
+
+func TryToPickUp(object item)
+{
+	if (!item)
+	{
+		return false;
+	}
+
 	// Remember stuff for a possible message - the item might have removed itself later.
 	var x = item->GetX();
 	var y = item->GetY();
@@ -330,10 +365,15 @@ func TryToCollect(object item)
 	{
 		Collect(item);
 	}
-	
+
 	// If anything happened, assume collection.
 	if (!item || item->Contained())
 	{
+		//if (item == this->~GetActiveItem() && !this->~GetHandItem())
+		//{
+		//	this->~SetHandItem(item);
+		//}
+
 		var message = CreateObject(FloatingMessage, AbsX(x), AbsY(y), GetOwner());
 		message.Visibility = VIS_Owner;
 		message->SetMessage(name);

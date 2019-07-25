@@ -19,7 +19,7 @@
 
 	used properties:
 	this.inventory.objects: items in the inventory, array
-	this.inventory.force_collection: used to pick stuff up, even though the hand-slots are all full (see RejectCollect + Collect with CON_Collect)
+	this.inventory.force_collection: marks that the user is actively trying to pick something up, instead of external collection
 	this.inventory.in_hands: item in right hand
 	this.inventory.on_back: item on back
 	this.inventory.active_item: item that is selected (and in hands if drawn)
@@ -143,6 +143,20 @@ func SetCarryOnlyItem(object item)
 
 
 /**
+	The player is actively picking something up.
+*/
+func SetCollecting(bool value)
+{
+	this.inventory.force_collection = value;
+}
+
+func IsCollecting()
+{
+	return this.inventory.force_collection;
+}
+
+
+/**
 	Drops the item in the inventory slot, if any
 */
 func DropInventoryItem(int slot)
@@ -237,9 +251,9 @@ func Collect(object item, bool ignoreOCF, bool force)
 {
 	// Whenever a script calls the Collect function manually, an intended force is assumed.
 	// That means, items will usually be collected with Collect().
-	this.inventory.force_collection = force ?? true;
+	SetCollecting(force ?? true);
 	var success = _inherited(item, ignoreOCF);
-	this.inventory.force_collection = false;
+	SetCollecting(false);
 	return success;
 }
 
@@ -251,8 +265,14 @@ func Collection2(object item)
 	// OnSlotFull might have done something to obj
 	if (GetActiveItem() == item)
 	{
+		// Handled in tryselectactiveitem now
+		//if (this.inventory.force_collection && GetHandItem() == nil)
+		//{
+		//	SetHandItem(item);
+		//}
 		item->~Selection(this);
 	}
+	this->~UpdateAttach();
 
 	return _inherited(item, ...);
 }
@@ -324,7 +344,7 @@ func RejectCollect(id type, object obj)
 	}
 
 	// Only handle extra-slot objects if the object was not dropped on purpose.
-	if (this.inventory.force_collection)
+	if (IsCollecting())
 	{
 		// Try to stuff obj into an object with an extra slot
 		for (var i = 0; Contents(i); ++i)
@@ -382,12 +402,13 @@ func GrabContents(object source, ...)
 	return inherited(source, ...);
 }
 
-func TrySelectActiveItem(object candidate, id preferred_type, bool was_in_hands)
+func TrySelectActiveItem(object preferred_item, id preferred_type, bool was_in_hands)
 {
 	if (GetActiveItem())
 	{
 		return;
 	}
+	var candidate = preferred_item;
 
 	if (!candidate && GetHandItem())
 	{
@@ -401,7 +422,7 @@ func TrySelectActiveItem(object candidate, id preferred_type, bool was_in_hands)
 		if (preferred_type)
 		{
 			candidates = FindObjects(contents, Find_ID(preferred_type));
-			PushBack(candidates, FindObjects(contents, Find_Not(Find_ID())));
+			candidates = Concatenate(candidates, FindObjects(contents, Find_Not(Find_ID())));
 		}
 		else
 		{
@@ -414,10 +435,18 @@ func TrySelectActiveItem(object candidate, id preferred_type, bool was_in_hands)
 				continue;
 			}
 			candidate = item;
+			if (preferred_type != item->GetID())
+			{
+				was_in_hands = false;
+			}
 			break;
 		}
 	}
 	SetActiveItem(candidate);
+	if (GetHandItem() == nil && IsCollecting() && candidate == preferred_item)
+	{
+		was_in_hands = true;
+	}
 	if (was_in_hands)
 	{
 		SetHandItem(candidate);

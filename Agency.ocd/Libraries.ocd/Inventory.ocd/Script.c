@@ -452,3 +452,17 @@ func TrySelectActiveItem(object preferred_item, id preferred_type, bool was_in_h
 		SetHandItem(candidate);
 	}
 }
+
+func DoHolsterHandItem(bool reset_active_item)
+{
+	var item = GetHandItem();
+	if (item)
+	{
+		SetHandItem(nil);
+		if (reset_active_item)
+		{
+			SetActiveItem(nil);
+		}
+		this->UpdateAttach();
+	}
+}

@@ -336,7 +336,7 @@ local FxPickUpItem = new Effect
 		if (!temporary)
 		{
 			this.Item = item;
-			this.Target->~DoHolsterHandItem();
+			this.Target->~DoHolsterHandItem(true);
 			this.Target->~PlayAnimation("ThrowArms", CLONK_ANIM_SLOT_Arms, Anim_Linear(1000, 0, 1500, 50, ANIM_Remove), Anim_Linear(0, 0, 1000, 10, ANIM_Remove));
 		}
 	},

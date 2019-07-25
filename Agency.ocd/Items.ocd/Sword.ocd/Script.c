@@ -1,6 +1,6 @@
 
 #include Property_Damage_Lethal
-#include Property_Item_CarryOnly
+#include Property_Item_Large
 #include Property_Weapon_Melee
 #include Property_Weapon_SilentAttack
 #include Property_Weapon_Throwable
@@ -10,9 +10,6 @@
 local Collectible = true;
 local Name = "$Name$";
 local Description = "$Description$";
-local BlastIncinerate = 30;
-local MaterialIncinerate = true;
-local BurnDownTime = 140;
 
 
 /* --- Display --- */

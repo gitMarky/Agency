@@ -322,7 +322,7 @@ func TryToCollect(object item)
 {
 	if (!GetEffect(FxPickUpItem.Name, this))
 	{
-		CreateEffect(FxPickUpItem, 1, 20, item);
+		CreateEffect(FxPickUpItem, 1, 10, item);
 	}
 }
 
@@ -337,6 +337,7 @@ local FxPickUpItem = new Effect
 		{
 			this.Item = item;
 			this.Target->~DoHolsterHandItem();
+			this.Target->~PlayAnimation("ThrowArms", CLONK_ANIM_SLOT_Arms, Anim_Linear(1000, 0, 1500, 50, ANIM_Remove), Anim_Linear(0, 0, 1000, 10, ANIM_Remove));
 		}
 	},
 

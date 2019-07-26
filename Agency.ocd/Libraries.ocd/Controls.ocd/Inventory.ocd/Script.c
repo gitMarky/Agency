@@ -450,6 +450,7 @@ local FxInventorySwitchItem = new Effect
 			// Switch items here
 			if (time == this.AnimTime / 2)
 			{
+				this.Target->DoHolsterHandItem(true);
 				this.Target->SetHandItem(this.DrawItem);
 				if (this.DrawItem)
 				{

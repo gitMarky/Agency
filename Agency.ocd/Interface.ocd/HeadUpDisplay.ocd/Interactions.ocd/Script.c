@@ -113,7 +113,7 @@ func ShowInteraction(proplist interaction, bool show)
 			{
 				var message = CreateObject(FloatingMessage, 0, 0, GetOwner());
 				message.Visibility = VIS_Owner;
-				message->SetMessage(interaction.Name);
+				message->SetMessage(Format("[%s] %s: %s", GetPlayerControlAssignment(GetOwner(), CON_Interact, true, false), interaction.Name, interaction.Desc));
 				message->SetSpeed(0, 0);
 		
 				interaction_display[target] = message;

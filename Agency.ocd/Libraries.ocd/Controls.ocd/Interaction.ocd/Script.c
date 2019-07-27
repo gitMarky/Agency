@@ -97,14 +97,69 @@ local FxIntHighlightInteraction = new Effect
 
 	Start = func (int temp, proplist interaction, int nr_interactions)
 	{
-		if (temp)
+		if (!temp)
 		{
-			return;
+			this.obj = interaction.Target;
+			this.interaction = interaction;
+			this.interaction_help = this.Target.control.interaction_hud_controller->GetInteractionHelp(interaction, this.Target);
+		
+			CreateDummy(nr_interactions);
 		}
-		this.obj = interaction.Target;
-		this.interaction = interaction;
-		this.interaction_help = this.Target.control.interaction_hud_controller->GetInteractionHelp(interaction, this.Target);
+	},
 	
+	Timer = func (int time)
+	{
+		if (!this.dummy) return -1;
+		if (!this.obj) return -1;
+	
+		if (this.scheduled_selection_particle && time > 10)
+		{
+			this->CreateSelectorParticle();
+			this.scheduled_selection_particle = false;
+		}
+	},
+	
+	Stop = func (int reason, temp)
+	{
+		if (temp) return;
+		if (this.dummy) this.dummy->RemoveObject();
+		if (!this) return;
+	},
+	
+	OnExecute = func ()
+	{
+		if (!this.obj || !this.dummy) return;
+		var message = this.dummy->CreateObject(FloatingMessage, 0, 0, GetOwner());
+		message.Visibility = VIS_Owner;
+		message->SetMessage(Format("%s||", this.interaction_help.help_text));
+		message->SetYDir(-10);
+		message->FadeOut(1, 20);
+	},
+	
+	GetOwner = func ()
+	{
+		return this.Target->GetOwner();
+	},
+	
+	CreateSelectorParticle = func ()
+	{
+		// Failsafe.
+		if (!this.dummy) return;
+	
+		// Draw a nice selector particle on item change.
+		var selector =
+		{
+			Size = PV_Step(5, 2, 1, Max(this.width, this.height)),
+			Attach = ATTACH_Front,
+			Rotation = PV_Step(1, PV_Random(0, 360), 1),
+			Alpha = 200
+		};
+	
+		this.dummy->CreateParticle("Selector", 0, 0, 0, 0, 0, Particles_Colored(selector, GetPlayerColor(GetOwner())), 1);
+	},
+
+	CreateDummy = func (int nr_interactions)
+	{
 		this.dummy = this.Target->CreateObject(Dummy, this.obj->GetX() - this.Target->GetX(), this.obj->GetY() - this.Target->GetY(), GetOwner());
 		this.dummy.ActMap =
 		{
@@ -167,57 +222,6 @@ local FxIntHighlightInteraction = new Effect
 			// Note that custom selectors are displayed immediately - particle because they might e.g. move the dummy.
 			this.scheduled_selection_particle = false;
 		}
-	},
-	
-	Timer = func (int time)
-	{
-		if (!this.dummy) return -1;
-		if (!this.obj) return -1;
-	
-		if (this.scheduled_selection_particle && time > 10)
-		{
-			this->CreateSelectorParticle();
-			this.scheduled_selection_particle = false;
-		}
-	},
-	
-	Stop = func (int reason, temp)
-	{
-		if (temp) return;
-		if (this.dummy) this.dummy->RemoveObject();
-		if (!this) return;
-	},
-	
-	OnExecute = func ()
-	{
-		if (!this.obj || !this.dummy) return;
-		var message = this.dummy->CreateObject(FloatingMessage, 0, 0, GetOwner());
-		message.Visibility = VIS_Owner;
-		message->SetMessage(Format("%s||", this.interaction_help.help_text));
-		message->SetYDir(-10);
-		message->FadeOut(1, 20);
-	},
-	
-	GetOwner = func ()
-	{
-		return this.Target->GetOwner();
-	},
-	
-	CreateSelectorParticle = func ()
-	{
-		// Failsafe.
-		if (!this.dummy) return;
-	
-		// Draw a nice selector particle on item change.
-		var selector =
-		{
-			Size = PV_Step(5, 2, 1, Max(this.width, this.height)),
-			Attach = ATTACH_Front,
-			Rotation = PV_Step(1, PV_Random(0, 360), 1),
-			Alpha = 200
-		};
-	
-		this.dummy->CreateParticle("Selector", 0, 0, 0, 0, 0, Particles_Colored(selector, GetPlayerColor(GetOwner())), 1);
 	},
 };
 

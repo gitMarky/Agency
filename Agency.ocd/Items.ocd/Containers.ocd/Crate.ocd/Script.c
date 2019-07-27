@@ -5,6 +5,7 @@
 	@author Ringwaul
 */
 
+#include Interaction_Container
 #include Interaction_PickUp
 #include Property_Item_CarryOnly
 

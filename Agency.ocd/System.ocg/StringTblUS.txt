@@ -4,3 +4,9 @@ CON_Holster_Desc=Draws an item from your holster, or holsters a drawn item.
 
 CON_Interact_Name=Interact
 CON_Interact_Desc=Performs an interaction with the environment.
+
+CON_Place_Name=Place
+CON_Place_Desc=Place objects from you inventory in the environment, instead of dropping or throwing them.
+
+CON_ExtraSlot_Name=Retrieve
+CON_ExtraSlot_Desc=Retrieve or conceal items in a container, such as a suitcase.

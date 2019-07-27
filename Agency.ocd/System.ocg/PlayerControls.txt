@@ -10,6 +10,16 @@
 	Identifier=Holster
 	GUIName=$CON_Holster_Name$
 	GUIDesc=$CON_Holster_Desc$
+	
+	[ControlDef]
+	Identifier=Place
+	GUIName=$CON_Place_Name$
+	GUIDesc=$CON_Place_Desc$
+	
+	[ControlDef]
+	Identifier=ExtraSlot
+	GUIName=$CON_ExtraSlot_Name$
+	GUIDesc=$CON_ExtraSlot_Desc$
 
 
 [ControlSets]

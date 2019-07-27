@@ -90,137 +90,151 @@ func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, i
 	return inherited(plr, ctrl, x, y, strength, repeat, status, ...);
 }
 
-private func FxIntHighlightInteractionStart(object target, proplist fx, temp, proplist interaction, int nr_interactions)
-{
-	if (temp)
-	{
-		return;
-	}
-	fx.obj = interaction.Target;
-	fx.interaction = interaction;
-	fx.interaction_help = target.control.interaction_hud_controller->GetInteractionHelp(interaction, target);
 
-	fx.dummy = CreateObject(Dummy, fx.obj->GetX() - GetX(), fx.obj->GetY() - GetY(), GetOwner());
-	fx.dummy.ActMap =
+local FxIntHighlightInteraction = new Effect
+{
+	Name = "FxIntHighlightInteraction",
+
+	Start = func (int temp, proplist interaction, int nr_interactions)
 	{
-		Attach =
+		if (temp)
 		{
-			Name = "Attach",
-			Procedure = DFA_ATTACH,
-			FacetBase = 1
+			return;
 		}
-	};
-	fx.dummy.Visibility = VIS_Owner;
-	// The selector's plane should be just behind the Clonk for stuff that usually is behind the Clonk.
-	// Otherwise, it looks rather odd when the catapult shines through the Clonk.
-	if (fx.obj.Plane < this.Plane)
-	{
-		fx.dummy.Plane = this.Plane - 1;
-	}
-	else
-	{
-		fx.dummy.Plane = 1000;
-	}
-	var multiple_interactions_hint = "";
-	if (fx.interaction.has_multiple_interactions)
-	{
-		multiple_interactions_hint = Format("|<c 999999>[%s] $More$..</c>", GetPlayerControlAssignment(GetOwner(), CON_Up, true, false));
-	}
-	var cycle_interactions_hint = "";
-	if (nr_interactions > 1)
-	{
-		cycle_interactions_hint = Format("|<c 999999>[%s/%s] $Cycle$..</c>", GetPlayerControlAssignment(GetOwner(), CON_Left, true, false), GetPlayerControlAssignment(GetOwner(), CON_Right, true, false));
-	}
-	fx.dummy->Message("@<c eeffee>%s</c>%s%s|", fx.interaction_help.help_text, multiple_interactions_hint, cycle_interactions_hint);
-
-	// Center dummy!
-	fx.dummy->SetVertexXY(0, fx.obj->GetVertex(0, VTX_X), fx.obj->GetVertex(0, VTX_Y));
-	fx.dummy->SetAction("Attach", fx.obj);
-
-	fx.width  = fx.obj->GetDefWidth();
-	fx.height = fx.obj->GetDefHeight();
-
-	// Draw the item's graphics in front of it again to achieve a highlighting effect.
-	fx.dummy->SetGraphics(nil, nil, 1, GFXOV_MODE_Object, nil, GFX_BLIT_Additive, fx.obj);
-
-	var custom_selector = nil;
-	if (fx.obj)
-	{
-		custom_selector = fx.obj->~DrawCustomInteractionSelector(fx.dummy, target, fx.interaction.interaction_index, fx.interaction.extra_data);
-	}
-
-	if (!custom_selector)
-	{
-		fx.scheduled_selection_particle = (FrameCounter() - this.control.interaction_start_time) < 10;
-		if (!fx.scheduled_selection_particle)
+		this.obj = interaction.Target;
+		this.interaction = interaction;
+		this.interaction_help = this.Target.control.interaction_hud_controller->GetInteractionHelp(interaction, this.Target);
+	
+		this.dummy = this.Target->CreateObject(Dummy, this.obj->GetX() - this.Target->GetX(), this.obj->GetY() - this.Target->GetY(), GetOwner());
+		this.dummy.ActMap =
 		{
-			EffectCall(nil, fx, "CreateSelectorParticle");
+			Attach =
+			{
+				Name = "Attach",
+				Procedure = DFA_ATTACH,
+				FacetBase = 1
+			}
+		};
+		this.dummy.Visibility = VIS_Owner;
+		// The selector's plane should be just behind the Clonk for stuff that usually is behind the Clonk.
+		// Otherwise, it looks rather odd when the catapult shines through the Clonk.
+		if (this.obj.Plane < this.Plane)
+		{
+			this.dummy.Plane = this.Plane - 1;
 		}
-	}
-	else
+		else
+		{
+			this.dummy.Plane = 1000;
+		}
+		var multiple_interactions_hint = "";
+		if (this.interaction.has_multiple_interactions)
+		{
+			multiple_interactions_hint = Format("|<c 999999>[%s] $More$..</c>", GetPlayerControlAssignment(GetOwner(), CON_Up, true, false));
+		}
+		var cycle_interactions_hint = "";
+		if (nr_interactions > 1)
+		{
+			cycle_interactions_hint = Format("|<c 999999>[%s/%s] $Cycle$..</c>", GetPlayerControlAssignment(GetOwner(), CON_Left, true, false), GetPlayerControlAssignment(GetOwner(), CON_Right, true, false));
+		}
+		this.dummy->Message("@<c eeffee>%s</c>%s%s|", this.interaction_help.help_text, multiple_interactions_hint, cycle_interactions_hint);
+	
+		// Center dummy!
+		this.dummy->SetVertexXY(0, this.obj->GetVertex(0, VTX_X), this.obj->GetVertex(0, VTX_Y));
+		this.dummy->SetAction("Attach", this.obj);
+	
+		this.width  = this.obj->GetDefWidth();
+		this.height = this.obj->GetDefHeight();
+	
+		// Draw the item's graphics in front of it again to achieve a highlighting effect.
+		this.dummy->SetGraphics(nil, nil, 1, GFXOV_MODE_Object, nil, GFX_BLIT_Additive, this.obj);
+	
+		var custom_selector = nil;
+		if (this.obj)
+		{
+			custom_selector = this.obj->~DrawCustomInteractionSelector(this.dummy, this.Target, this.interaction.interaction_index, this.interaction.extra_data);
+		}
+	
+		if (!custom_selector)
+		{
+			this.scheduled_selection_particle = (FrameCounter() - this.Target.control.interaction_start_time) < 10;
+			if (!this.scheduled_selection_particle)
+			{
+				this->CreateSelectorParticle();
+			}
+		}
+		else
+		{
+			// Note that custom selectors are displayed immediately - particle because they might e.g. move the dummy.
+			this.scheduled_selection_particle = false;
+		}
+	},
+	
+	CreateSelectorParticle = func ()
 	{
-		// Note that custom selectors are displayed immediately - particle because they might e.g. move the dummy.
-		fx.scheduled_selection_particle = false;
-	}
-}
-
-func FxIntHighlightInteractionCreateSelectorParticle(object target, effect fx)
-{
-	// Failsafe.
-	if (!fx.dummy) return;
-
-	// Draw a nice selector particle on item change.
-	var selector =
+		// Failsafe.
+		if (!this.dummy) return;
+	
+		// Draw a nice selector particle on item change.
+		var selector =
+		{
+			Size = PV_Step(5, 2, 1, Max(this.width, this.height)),
+			Attach = ATTACH_Front,
+			Rotation = PV_Step(1, PV_Random(0, 360), 1),
+			Alpha = 200
+		};
+	
+		this.dummy->CreateParticle("Selector", 0, 0, 0, 0, 0, Particles_Colored(selector, GetPlayerColor(GetOwner())), 1);
+	},
+	
+	Timer = func (int time)
 	{
-		Size = PV_Step(5, 2, 1, Max(fx.width, fx.height)),
-		Attach = ATTACH_Front,
-		Rotation = PV_Step(1, PV_Random(0, 360), 1),
-		Alpha = 200
-	};
-
-	fx.dummy->CreateParticle("Selector", 0, 0, 0, 0, 0, Particles_Colored(selector, GetPlayerColor(GetOwner())), 1);
-}
-
-func FxIntHighlightInteractionTimer(object target, proplist fx, int time)
-{
-	if (!fx.dummy) return -1;
-	if (!fx.obj) return -1;
-
-	if (fx.scheduled_selection_particle && time > 10)
+		if (!this.dummy) return -1;
+		if (!this.obj) return -1;
+	
+		if (this.scheduled_selection_particle && time > 10)
+		{
+			this->CreateSelectorParticle();
+			this.scheduled_selection_particle = false;
+		}
+	},
+	
+	Stop = func (int reason, temp)
 	{
-		EffectCall(nil, fx, "CreateSelectorParticle");
-		fx.scheduled_selection_particle = false;
-	}
-}
+		if (temp) return;
+		if (this.dummy) this.dummy->RemoveObject();
+		if (!this) return;
+	},
+	
+	OnExecute = func ()
+	{
+		if (!this.obj || !this.dummy) return;
+		var message = this.dummy->CreateObject(FloatingMessage, 0, 0, GetOwner());
+		message.Visibility = VIS_Owner;
+		message->SetMessage(Format("%s||", this.interaction_help.help_text));
+		message->SetYDir(-10);
+		message->FadeOut(1, 20);
+	},
+	
+	GetOwner = func ()
+	{
+		return this.Target->GetOwner();
+	},
+};
 
-func FxIntHighlightInteractionStop(object target, proplist fx, int reason, temp)
-{
-	if (temp) return;
-	if (fx.dummy) fx.dummy->RemoveObject();
-	if (!this) return;
-}
-
-func FxIntHighlightInteractionOnExecute(object target, proplist fx)
-{
-	if (!fx.obj || !fx.dummy) return;
-	var message = fx.dummy->CreateObject(FloatingMessage, 0, 0, GetOwner());
-	message.Visibility = VIS_Owner;
-	message->SetMessage(Format("%s||", fx.interaction_help.help_text));
-	message->SetYDir(-10);
-	message->FadeOut(1, 20);
-}
 
 func SetNextInteraction(proplist to)
 {
 	// Clear all old markers.
 	var e = nil;
-	while (e = GetEffect("IntHighlightInteraction", this))
+	while (e = GetEffect(FxIntHighlightInteraction.Name, this))
 		RemoveEffect(nil, this, e);
 	// And set & mark new one.
 	SetCurrentInteraction(to);
 	var interaction_cnt = GetInteractableObjectsCount();
 	if (to)
-		AddEffect("IntHighlightInteraction", this, 1, 2, this, nil, to, interaction_cnt);
+	{
+		CreateEffect(FxIntHighlightInteraction, 1, 2, to, interaction_cnt);
+	}
 }
 
 func FindNextInteraction(proplist start_from, int x_dir)
@@ -340,10 +354,12 @@ func EndInteract()
 	}
 
 	var e = nil;
-	while (e = GetEffect("IntHighlightInteraction", this))
+	while (e = GetEffect(FxIntHighlightInteraction.Name, this))
 	{
 		if (executed)
-			EffectCall(this, e, "OnExecute");
+		{
+			e->OnExecute(); // TODO? EffectCall(this, e, "OnExecute");
+		}
 		RemoveEffect(nil, this, e);
 	}
 

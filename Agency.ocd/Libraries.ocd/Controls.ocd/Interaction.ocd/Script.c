@@ -488,6 +488,7 @@ static const Interaction = new Global
 	Name = nil,       // string, name of the interaction
 	Desc = nil,       // string, optional, description
 	Condition = nil,  // function, optional, the interaction is available only when this condition is true
+	Control = CON_Interact, // int, required, the button that is triggers the interaction
 	Execute = nil,    // function, required, call this when executing the interaction
 	
 	// These variables are internal

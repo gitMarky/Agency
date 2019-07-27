@@ -14,7 +14,7 @@
 local Name = "$Name$";
 local Description = "$Description$";
 local Collectible = true;
-local MaxContentsCount = 1;
+local ContainerControl = CON_ExtraSlot;
 
 
 /* --- Engine Callbacks --- */

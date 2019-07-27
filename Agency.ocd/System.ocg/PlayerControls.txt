@@ -50,3 +50,11 @@
 		[Assignment]
 		Key=P
 		Control=Drop
+		
+		[Assignment]
+		Key=O
+		Control=Place
+		
+		[Assignment]
+		Key=Z
+		Control=ExtraSlot

@@ -13,6 +13,7 @@ public func GetInteractions(object by_agent)
 	{
 		Target = this,
 		Name = "$DescPickUp$",
+		Control = CON_PickUp,
 		Condition = this.CanBePickedUp,
 		Execute = this.GetPickedUp,
 	});

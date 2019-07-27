@@ -169,23 +169,6 @@ local FxIntHighlightInteraction = new Effect
 		}
 	},
 	
-	CreateSelectorParticle = func ()
-	{
-		// Failsafe.
-		if (!this.dummy) return;
-	
-		// Draw a nice selector particle on item change.
-		var selector =
-		{
-			Size = PV_Step(5, 2, 1, Max(this.width, this.height)),
-			Attach = ATTACH_Front,
-			Rotation = PV_Step(1, PV_Random(0, 360), 1),
-			Alpha = 200
-		};
-	
-		this.dummy->CreateParticle("Selector", 0, 0, 0, 0, 0, Particles_Colored(selector, GetPlayerColor(GetOwner())), 1);
-	},
-	
 	Timer = func (int time)
 	{
 		if (!this.dummy) return -1;
@@ -218,6 +201,23 @@ local FxIntHighlightInteraction = new Effect
 	GetOwner = func ()
 	{
 		return this.Target->GetOwner();
+	},
+	
+	CreateSelectorParticle = func ()
+	{
+		// Failsafe.
+		if (!this.dummy) return;
+	
+		// Draw a nice selector particle on item change.
+		var selector =
+		{
+			Size = PV_Step(5, 2, 1, Max(this.width, this.height)),
+			Attach = ATTACH_Front,
+			Rotation = PV_Step(1, PV_Random(0, 360), 1),
+			Alpha = 200
+		};
+	
+		this.dummy->CreateParticle("Selector", 0, 0, 0, 0, 0, Particles_Colored(selector, GetPlayerColor(GetOwner())), 1);
 	},
 };
 

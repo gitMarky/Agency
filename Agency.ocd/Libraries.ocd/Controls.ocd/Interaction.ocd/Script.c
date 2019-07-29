@@ -37,63 +37,28 @@ func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, i
 	}
 
 	// Begin interaction.
-	if (ctrl == CON_Interact && status == CONS_Down)
+	if (IsInteractionControl(ctrl) && status == CONS_Down)
 	{
 		this->CancelUse();
-		BeginInteract();
+		BeginInteract(ctrl);
 		return true;
 	}
-
+	
 	// Switch object or finish interaction?
-	if (this.control.is_interacting)
+	
+	var interaction_control = this.control.is_interacting;
+	if (interaction_control)
 	{
-		// Stop picking up.
-		if (ctrl == CON_InteractNext_Stop)
-		{
-			AbortInteract();
-			return true;
-		}
 
-		// Finish picking up (aka "collect").
-		if (ctrl == CON_Interact && status == CONS_Up)
-		{
-			EndInteract();
-			return true;
-		}
-
-		// Switch left/right through objects.
-		var dir = nil;
-		if (ctrl == CON_InteractNext_Left)
-		{
-			dir = -1;
-		}
-		else if (ctrl == CON_InteractNext_Right)
-		{
-			dir = 1;
-		}
-		else if (ctrl == CON_InteractNext_CycleObject)
-		{
-			dir = 0;
-		}
-
-		if (dir != nil)
-		{
-			var item = FindNextInteraction(GetCurrentInteraction(), dir);
-			if (item)
-			{
-				SetNextInteraction(item);
-			}
-			return true;
-		}
 	}
 
 	return inherited(plr, ctrl, x, y, strength, repeat, status, ...);
 }
 
 
-local FxIntHighlightInteraction = new Effect
+local FxControlInteraction = new Effect
 {
-	Name = "FxIntHighlightInteraction",
+	Name = "FxControlInteraction",
 
 	Start = func (int temp, proplist interaction, int nr_interactions)
 	{
@@ -223,6 +188,54 @@ local FxIntHighlightInteraction = new Effect
 			this.scheduled_selection_particle = false;
 		}
 	},
+
+	Control = func (int ctrl, int x, int y, int strength, bool repeat, int status)
+	{
+		var interaction_control = this.Target.control.is_interacting;
+
+		// Stop interacting.
+		if (ctrl == CON_Down || ctrl == CON_PickUpNext_Stop || ctrl == CON_InteractNext_Stop)
+		{
+			this.Target->AbortInteract();
+			return true;
+		}
+
+		// Finish interacting.
+		if (ctrl == interaction_control && status == CONS_Up)
+		{
+			this.Target->EndInteract();
+			return true;
+		}
+
+		// Switch left/right through objects.
+		var dir = nil;
+		if (ctrl == CON_Left || ctrl == CON_PickUpNext_Left || ctrl == CON_InteractNext_Left)
+		{
+			dir = -1;
+		}
+		else if (ctrl == CON_Right || ctrl == CON_PickUpNext_Right || ctrl == CON_InteractNext_Right)
+		{
+			dir = 1;
+		}
+
+		if (dir != nil)
+		{
+			var item = this.Target->FindNextInteraction(interaction_control, this.Target->GetCurrentInteraction(), dir);
+			if (item)
+			{
+				this.Target->SetNextInteraction(item);
+			}
+			return true;
+		}
+		
+		// Stop interacting if another button is pressed.
+		if (ctrl != interaction_control)
+		{
+			Log("Abort");
+			this.Target->AbortInteract();
+			return true;
+		}
+	},
 };
 
 
@@ -230,28 +243,35 @@ func SetNextInteraction(proplist to)
 {
 	// Clear all old markers.
 	var e = nil;
-	while (e = GetEffect(FxIntHighlightInteraction.Name, this))
+	while (e = GetEffect(FxControlInteraction.Name, this))
+	{
 		RemoveEffect(nil, this, e);
+	}
 	// And set & mark new one.
 	SetCurrentInteraction(to);
 	var interaction_cnt = GetInteractableObjectsCount();
 	if (to)
 	{
-		CreateEffect(FxIntHighlightInteraction, 1, 2, to, interaction_cnt);
+		CreateEffect(FxControlInteraction, 1, 2, to, interaction_cnt);
 	}
 }
 
-func FindNextInteraction(proplist start_from, int x_dir)
+func FindNextInteraction(int ctrl, proplist start_from, int x_dir)
 {
 	var starting_object = this;
 	if (start_from && start_from.Target)
+	{
 		starting_object = start_from.Target;
+	}
 	var sort = Sort_Func("Library_ClonkInventoryControl_Sort_Priority", starting_object->GetX());
-	var interactions = GetInteractableObjects(sort);
+	var interactions = GetInteractableObjects(ctrl, sort);
 	var len = GetLength(interactions);
-	if (!len) return nil;
+	if (!len)
+	{
+		return nil;
+	}
 	// Find object next to the current one.
-	// (note that index==-1 accesses the last element)
+	// (note that index == -1 accesses the last element)
 	var index = -1;
 	// GetIndexOf does not use DeepEqual, so work around that here.
 	for (var i = 0; i < len; ++i)
@@ -268,13 +288,19 @@ func FindNextInteraction(proplist start_from, int x_dir)
 		// Or cycle through objects to the right (x_dir==1) or left (x_dir==-1).
 		var cycle_dir = x_dir;
 		var do_cycle_object = x_dir == 0;
-		if (do_cycle_object) cycle_dir = 1;
+		if (do_cycle_object)
+		{
+			cycle_dir = 1;
+		}
 
 		var found = false;
 		for (var i = 1; i < len; ++i)
 		{
 			index = (index + cycle_dir) % len;
-			if (index < 0) index += len;
+			if (index < 0)
+			{
+				index += len;
+			}
 			var is_same_object = interactions[index].Target == previous_interaction.Target;
 			if (do_cycle_object == is_same_object)
 			{
@@ -303,7 +329,10 @@ func FindNextInteraction(proplist start_from, int x_dir)
 			}
 		}
 
-		if (!found) index = -1;
+		if (!found)
+		{
+			index = -1;
+		}
 	}
 	else
 	{
@@ -312,22 +341,31 @@ func FindNextInteraction(proplist start_from, int x_dir)
 		for (var i = 0; i < len; ++i)
 		{
 			var interaction = interactions[i];
-			if (high_prio != nil && interaction.priority <= high_prio.priority) continue;
+			if (high_prio != nil && interaction.priority <= high_prio.priority)
+			{
+				continue;
+			}
 			high_prio = interaction;
 			index = i;
 		}
 	}
 
-	if (index == -1) return nil;
+	if (index == -1)
+	{
+		return nil;
+	}
 	var next = interactions[index];
-	if (DeepEqual(next, start_from)) return nil;
+	if (DeepEqual(next, start_from))
+	{
+		return nil;
+	}
 	return next;
 }
 
-func BeginInteract()
+func BeginInteract(int ctrl)
 {
 	this.control.interaction_hud_controller = this->GetHUDController();
-	this.control.is_interacting = true;
+	this.control.is_interacting = ctrl;
 	this.control.interaction_start_time = FrameCounter();
 
 	// Force update the HUD controller, which is responsible for pre-selecting the "best" object.
@@ -335,7 +373,9 @@ func BeginInteract()
 	// Then, iff the HUD shows an object, pre-select one.
 	var interaction = GetCurrentInteraction();
 	if (interaction)
+	{
 		SetNextInteraction(interaction);
+	}
 	this.control.interaction_hud_controller->EnableInteractionUpdating(false);
 }
 
@@ -348,7 +388,7 @@ func AbortInteract()
 
 func EndInteract()
 {
-	this.control.is_interacting = false;
+	this.control.is_interacting = nil;
 
 	var executed = false;
 	if (GetCurrentInteraction())
@@ -358,11 +398,11 @@ func EndInteract()
 	}
 
 	var e = nil;
-	while (e = GetEffect(FxIntHighlightInteraction.Name, this))
+	while (e = GetEffect(FxControlInteraction.Name, this))
 	{
 		if (executed)
 		{
-			e->OnExecute(); // TODO? EffectCall(this, e, "OnExecute");
+			e->OnExecute();
 		}
 		RemoveEffect(nil, this, e);
 	}
@@ -400,7 +440,7 @@ func PushBackInteraction(array to, proplist interaction)
 		extra_data: custom extra_data for an interaction specified by the object
 		actiontype: the kind of interaction. One of the ACTIONTYPE_* constants
 */
-func GetInteractableObjects(array sort)
+func GetInteractableObjects(int ctrl, array sort)
 {
 	var possible_interactions = [];
 
@@ -416,7 +456,10 @@ func GetInteractableObjects(array sort)
 		{
 			for (var interaction in interactable->~GetInteractions(this))
 			{
-				PushBackInteraction(possible_interactions, interaction);
+				if (ctrl == nil || interaction.Control == ctrl)
+				{
+					PushBackInteraction(possible_interactions, interaction);
+				}
 			}
 		}
 	}

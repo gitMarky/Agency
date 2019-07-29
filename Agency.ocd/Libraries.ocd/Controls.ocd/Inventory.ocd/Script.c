@@ -38,7 +38,7 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 	{
 		return false;
 	}
-
+/*
 	// Collection and dropping is only allowed when the Clonk is not contained.
 	if (Contained())
 	{
@@ -134,7 +134,7 @@ public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool re
 			}
 		}
 	}
-
+*/
 	// Holster or unholster
 	if (ctrl == CON_Holster && status == CONS_Down && this->ReadyToAction())
 	{

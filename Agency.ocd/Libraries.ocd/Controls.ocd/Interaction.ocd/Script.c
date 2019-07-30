@@ -221,7 +221,6 @@ local FxControlInteraction = new Effect
 		if (dir != nil)
 		{
 			var item = this.Target->FindNextInteraction(interaction_control, this.Target->GetCurrentInteraction(), dir, true);
-			Log("Found next itneraction: %v", item);
 			if (item)
 			{
 				this.Target->SetNextInteraction(item);
@@ -232,7 +231,6 @@ local FxControlInteraction = new Effect
 		// Stop interacting if another button is pressed.
 		if (ctrl != interaction_control)
 		{
-			Log("Abort");
 			this.Target->AbortInteract();
 			return true;
 		}
@@ -256,7 +254,7 @@ func SetNextInteraction(proplist interaction)
 	}
 }
 
-func FindNextInteraction(int ctrl, proplist previous_interaction, int cycle_dir, bool only_available)
+func FindNextInteraction(int ctrl, proplist previous_interaction, int cycle_dir)
 {
 	var starting_object = this;
 	if (previous_interaction && previous_interaction.Target)
@@ -264,7 +262,7 @@ func FindNextInteraction(int ctrl, proplist previous_interaction, int cycle_dir,
 		starting_object = previous_interaction.Target;
 	}
 	var sort = Sort_Func("Library_ClonkInventoryControl_Sort_Priority", starting_object->GetX());
-	var interactions = GetInteractionInfos(ctrl, sort, only_available);
+	var interactions = GetInteractionInfos(ctrl, sort);
 	var count = GetLength(interactions);
 	if (!count)
 	{
@@ -275,15 +273,16 @@ func FindNextInteraction(int ctrl, proplist previous_interaction, int cycle_dir,
 	var index = -1;
 	// Determine index of the previous interaction 
 	// GetIndexOf does not use DeepEqual, so work around that here.
+	// DeepEqual is not suitable because we count when the condition
+	// was evaluated the last time.
 	for (var i = 0; i < count; ++i)
 	{
-		if (DeepEqual(previous_interaction, interactions[i]))
+		if (IsSameInteraction(previous_interaction, interactions[i]))
 		{
 			index = i;
 			break;
 		}
 	}
-	Log("Index of current interaction: %d / %v / %v", index, previous_interaction, interactions);
 
 	var next_interaction_index = -1;
 	if (index == -1) // Previous item was not found in the list.
@@ -299,7 +298,6 @@ func FindNextInteraction(int ctrl, proplist previous_interaction, int cycle_dir,
 				next_interaction_index = i;
 			}
 		}
-		Log("Next interaction index highest prio: %d", next_interaction_index);
 	}
 	else // Cycle through interactions to the right or left .
 	{
@@ -314,10 +312,9 @@ func FindNextInteraction(int ctrl, proplist previous_interaction, int cycle_dir,
 			}
 			next_interaction_index = next_interaction_index % count;
 
-			if (!DeepEqual(previous_interaction, interactions[next_interaction_index]))
+			if (!IsSameInteraction(previous_interaction, interactions[next_interaction_index]))
 			{
 				found = true;
-				Log("Found next at index %d", next_interaction_index);
 
 				// When cycling to the left, make sure to arrive at the first interaction for that object (and not the last).
 				// Otherwise it's pretty unintuitive, why you sometimes grab and sometimes enter the catapult as the first interaction.
@@ -332,13 +329,8 @@ func FindNextInteraction(int ctrl, proplist previous_interaction, int cycle_dir,
 						{
 							index = current_index;
 						}
-						//else
-						//{
-						//	break;
-						//}
 					}
 				}
-				//break;
 			}
 		}
 	}
@@ -347,29 +339,28 @@ func FindNextInteraction(int ctrl, proplist previous_interaction, int cycle_dir,
 	{
 		return nil;
 	}
-	/*var next =*/ return interactions[next_interaction_index];
-	/*if (DeepEqual(next, start_from))
-	{
-		return nil;
-	}*/
-	//return next;
+	return interactions[next_interaction_index];
 }
 
 func BeginInteract(int ctrl)
 {
 	this.control.interaction_hud_controller = this->GetHUDController();
-	this.control.is_interacting = ctrl;
+	this.control.is_interacting = true;
 	this.control.interaction_start_time = FrameCounter();
 
 	// Force update the HUD controller, which is responsible for pre-selecting the "best" object.
 	this.control.interaction_hud_controller->UpdateInteractionObject();
 	// Then, iff the HUD shows an object, pre-select one.
-	var interaction = GetCurrentInteraction();
+	var interaction = GetInteractionInfos(ctrl, nil)[0];
 	if (interaction)
 	{
 		SetNextInteraction(interaction);
+		this.control.interaction_hud_controller->EnableInteractionUpdating(false);
 	}
-	this.control.interaction_hud_controller->EnableInteractionUpdating(false);
+	else
+	{
+		AbortInteract();
+	}
 }
 
 // Stops interaction selection without executing the current selection.
@@ -433,7 +424,7 @@ func PushBackInteraction(array to, proplist interaction)
 		extra_data: custom extra_data for an interaction specified by the object
 		actiontype: the kind of interaction. One of the ACTIONTYPE_* constants
 */
-func GetInteractionInfos(int ctrl, array sort, bool only_available)
+func GetInteractionInfos(int ctrl, array sort)
 {
 	var possible_interactions = [];
 
@@ -449,20 +440,13 @@ func GetInteractionInfos(int ctrl, array sort, bool only_available)
 		{
 			for (var interaction in interactable->~GetInteractions(this))
 			{
-				if (only_available && !HasInteraction(interaction))
-				{
-					continue;
-				}
-				if (ctrl == nil || interaction.Control == ctrl)
+				if (HasInteraction(interaction) && (ctrl == nil || interaction.Control == ctrl))
 				{
 					PushBackInteraction(possible_interactions, interaction);
 				}
 			}
 		}
 	}
-	
-	// Very simple...
-	SetCurrentInteraction(possible_interactions[0]);
 
 	return possible_interactions;
 }
@@ -529,6 +513,17 @@ func HasInteraction(proplist interaction)
 		    && IsValueInArray(GetInteractables(), interaction.Target); // Only if that is even interactable, check that the generic conditions still hold
 	}
 	return false;
+}
+
+
+func IsSameInteraction(proplist a, proplist b)
+{
+	// Do not factor in:
+	// - Description, name, because purely cosmetical
+	// - Condition, IsAvailable, because those both need to be valid anyway
+	return (a.Target == b.Target)
+	    && (a.Control == b.Control)
+	    && (a.Execute == b.Execute);
 }
 
 // Executes interaction with an object. /action_info/ is a proplist as returned by GetInteractionInfos

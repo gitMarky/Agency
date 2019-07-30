@@ -14,11 +14,13 @@
 
 local InteractionDistance = 12;
 
+
 func Construction()
 {
 	this.control.is_interacting = false;
 	return _inherited(...);
 }
+
 
 func OnShiftCursor(object new_cursor)
 {
@@ -28,6 +30,7 @@ func OnShiftCursor(object new_cursor)
 	}
 	return _inherited(new_cursor, ...);
 }
+
 
 func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, int status)
 {
@@ -60,7 +63,7 @@ local FxControlInteraction = new Effect
 {
 	Name = "FxControlInteraction",
 
-	Start = func (int temp, proplist interaction, int nr_interactions)
+	Start = func (int temp, proplist interaction, bool has_multiple)
 	{
 		if (!temp)
 		{
@@ -68,7 +71,7 @@ local FxControlInteraction = new Effect
 			this.interaction = interaction;
 			this.interaction_help = this.Target.control.interaction_hud_controller->GetInteractionHelp(interaction, this.Target);
 		
-			CreateDummy(nr_interactions);
+			CreateDummy(has_multiple);
 		}
 	},
 	
@@ -123,7 +126,7 @@ local FxControlInteraction = new Effect
 		this.dummy->CreateParticle("Selector", 0, 0, 0, 0, 0, Particles_Colored(selector, GetPlayerColor(GetOwner())), 1);
 	},
 
-	CreateDummy = func (int nr_interactions)
+	CreateDummy = func (bool has_multiple)
 	{
 		this.dummy = this.Target->CreateObject(Dummy, this.obj->GetX() - this.Target->GetX(), this.obj->GetY() - this.Target->GetY(), GetOwner());
 		this.dummy.ActMap =
@@ -146,17 +149,12 @@ local FxControlInteraction = new Effect
 		{
 			this.dummy.Plane = 1000;
 		}
-		var multiple_interactions_hint = "";
-		if (this.interaction.has_multiple_interactions)
-		{
-			multiple_interactions_hint = Format("|<c 999999>[%s] $More$..</c>", GetPlayerControlAssignment(GetOwner(), CON_Up, true, false));
-		}
 		var cycle_interactions_hint = "";
-		if (nr_interactions > 1)
+		if (has_multiple)
 		{
 			cycle_interactions_hint = Format("|<c 999999>[%s/%s] $Cycle$..</c>", GetPlayerControlAssignment(GetOwner(), CON_Left, true, false), GetPlayerControlAssignment(GetOwner(), CON_Right, true, false));
 		}
-		this.dummy->Message("@<c eeffee>%s</c>%s%s|", this.interaction_help.help_text, multiple_interactions_hint, cycle_interactions_hint);
+		this.dummy->Message("@<c eeffee>%s</c>%s|", this.interaction_help.help_text, cycle_interactions_hint);
 	
 		// Center dummy!
 		this.dummy->SetVertexXY(0, this.obj->GetVertex(0, VTX_X), this.obj->GetVertex(0, VTX_Y));
@@ -238,7 +236,7 @@ local FxControlInteraction = new Effect
 };
 
 
-func SetNextInteraction(proplist interaction)
+func SetNextInteraction(proplist interaction, bool has_multiple)
 {
 	// Clear all old markers.
 	var control;
@@ -250,9 +248,10 @@ func SetNextInteraction(proplist interaction)
 	SetCurrentInteraction(interaction);
 	if (interaction)
 	{
-		CreateEffect(FxControlInteraction, 1, 2, interaction, GetInteractableObjectsCount());
+		CreateEffect(FxControlInteraction, 1, 2, interaction, has_multiple);
 	}
 }
+
 
 func FindNextInteraction(int ctrl, proplist previous_interaction, int cycle_dir)
 {
@@ -342,6 +341,7 @@ func FindNextInteraction(int ctrl, proplist previous_interaction, int cycle_dir)
 	return interactions[next_interaction_index];
 }
 
+
 func BeginInteract(int ctrl)
 {
 	this.control.interaction_hud_controller = this->GetHUDController();
@@ -351,10 +351,11 @@ func BeginInteract(int ctrl)
 	// Force update the HUD controller, which is responsible for pre-selecting the "best" object.
 	this.control.interaction_hud_controller->UpdateInteractionObject();
 	// Then, iff the HUD shows an object, pre-select one.
-	var interaction = GetInteractionInfos(ctrl, nil)[0];
+	var interactions = GetInteractionInfos(ctrl, nil);
+	var interaction = interactions[0];
 	if (interaction)
 	{
-		SetNextInteraction(interaction);
+		SetNextInteraction(interaction, GetLength(interactions) > 1);
 		this.control.interaction_hud_controller->EnableInteractionUpdating(false);
 	}
 	else
@@ -363,6 +364,7 @@ func BeginInteract(int ctrl)
 	}
 }
 
+
 // Stops interaction selection without executing the current selection.
 func AbortInteract()
 {
@@ -370,9 +372,10 @@ func AbortInteract()
 	EndInteract();
 }
 
+
 func EndInteract()
 {
-	this.control.is_interacting = nil;
+	this.control.is_interacting = false;
 
 	var executed = false;
 	if (GetCurrentInteraction())
@@ -395,25 +398,6 @@ func EndInteract()
 	this.control.interaction_hud_controller->EnableInteractionUpdating(true);
 }
 
-/**
-	Wraps "PushBack", but also sets a flag when two interactions of the same object exist.
-*/
-func PushBackInteraction(array to, proplist interaction)
-{
-	PushBack(to, interaction);
-	var count = 0;
-	for (var other in to)
-	{
-		if (other.Target && (other.Target == interaction.Target))
-		{
-			count += 1;
-			if (count > 1 || other != interaction)
-			{
-				other.has_multiple_interactions = true;
-			}
-		}
-	}
-}
 
 /**
 	Returns an array containing proplists with information about the interactable actions.
@@ -442,7 +426,7 @@ func GetInteractionInfos(int ctrl, array sort)
 			{
 				if (HasInteraction(interaction) && (ctrl == nil || interaction.Control == ctrl))
 				{
-					PushBackInteraction(possible_interactions, interaction);
+					PushBack(possible_interactions, interaction);
 				}
 			}
 		}
@@ -451,15 +435,18 @@ func GetInteractionInfos(int ctrl, array sort)
 	return possible_interactions;
 }
 
+
 func GetCurrentInteraction()
 {
 	return this.control.current_interaction;
 }
 
+
 func SetCurrentInteraction(proplist interaction)
 {
 	this.control.current_interaction = interaction;
 }
+
 
 func GetInteractables(array sort)
 {
@@ -481,18 +468,6 @@ func GetInteractables(array sort)
 		               sort);
 }
 
-// Returns the number of interactable objects, which is different from the total number of available interactions.
-func GetInteractableObjectsCount()
-{
-	var interactions = GetInteractionInfos();
-	var interaction_objects = [];
-	for (var interaction in interactions)
-	{
-		PushBack(interaction_objects, interaction.Target);
-	}
-	RemoveDuplicates(interaction_objects);
-	return GetLength(interaction_objects);
-}
 
 func HasInteraction(proplist interaction)
 {
@@ -526,6 +501,7 @@ func IsSameInteraction(proplist a, proplist b)
 	    && (a.Execute == b.Execute);
 }
 
+
 // Executes interaction with an object. /action_info/ is a proplist as returned by GetInteractionInfos
 func ExecuteInteraction(proplist interaction)
 {
@@ -534,6 +510,7 @@ func ExecuteInteraction(proplist interaction)
 		interaction.Target->Call(interaction.Execute, this, interaction);
 	}
 }
+
 
 static const Interaction = new Global 
 {

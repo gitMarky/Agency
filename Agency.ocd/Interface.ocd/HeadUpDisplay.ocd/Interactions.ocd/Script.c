@@ -60,7 +60,7 @@ public func UpdateInteractionObject()
 		return;
 	}
 
-	var interactions = cursor->~GetInteractableObjects();
+	var interactions = cursor->~GetInteractionInfos();
 	if (!interactions || !GetLength(interactions))
 	{
 		HideInteractions();

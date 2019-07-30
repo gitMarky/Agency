@@ -191,7 +191,7 @@ local FxControlInteraction = new Effect
 
 	Control = func (int ctrl, int x, int y, int strength, bool repeat, int status)
 	{
-		var interaction_control = this.Target.control.is_interacting;
+		var interaction_control = this.Target->GetCurrentInteraction().Control;
 
 		// Stop interacting.
 		if (ctrl == CON_Down || ctrl == CON_PickUpNext_Stop || ctrl == CON_InteractNext_Stop)
@@ -220,7 +220,8 @@ local FxControlInteraction = new Effect
 
 		if (dir != nil)
 		{
-			var item = this.Target->FindNextInteraction(interaction_control, this.Target->GetCurrentInteraction(), dir);
+			var item = this.Target->FindNextInteraction(interaction_control, this.Target->GetCurrentInteraction(), dir, true);
+			Log("Found next itneraction: %v", item);
 			if (item)
 			{
 				this.Target->SetNextInteraction(item);
@@ -239,127 +240,119 @@ local FxControlInteraction = new Effect
 };
 
 
-func SetNextInteraction(proplist to)
+func SetNextInteraction(proplist interaction)
 {
 	// Clear all old markers.
-	var e = nil;
-	while (e = GetEffect(FxControlInteraction.Name, this))
+	var control;
+	while (control = GetEffect(FxControlInteraction.Name, this))
 	{
-		RemoveEffect(nil, this, e);
+		RemoveEffect(nil, this, control);
 	}
 	// And set & mark new one.
-	SetCurrentInteraction(to);
-	var interaction_cnt = GetInteractableObjectsCount();
-	if (to)
+	SetCurrentInteraction(interaction);
+	if (interaction)
 	{
-		CreateEffect(FxControlInteraction, 1, 2, to, interaction_cnt);
+		CreateEffect(FxControlInteraction, 1, 2, interaction, GetInteractableObjectsCount());
 	}
 }
 
-func FindNextInteraction(int ctrl, proplist start_from, int x_dir)
+func FindNextInteraction(int ctrl, proplist previous_interaction, int cycle_dir, bool only_available)
 {
 	var starting_object = this;
-	if (start_from && start_from.Target)
+	if (previous_interaction && previous_interaction.Target)
 	{
-		starting_object = start_from.Target;
+		starting_object = previous_interaction.Target;
 	}
 	var sort = Sort_Func("Library_ClonkInventoryControl_Sort_Priority", starting_object->GetX());
-	var interactions = GetInteractableObjects(ctrl, sort);
-	var len = GetLength(interactions);
-	if (!len)
+	var interactions = GetInteractionInfos(ctrl, sort, only_available);
+	var count = GetLength(interactions);
+	if (!count)
 	{
 		return nil;
 	}
 	// Find object next to the current one.
 	// (note that index == -1 accesses the last element)
 	var index = -1;
+	// Determine index of the previous interaction 
 	// GetIndexOf does not use DeepEqual, so work around that here.
-	for (var i = 0; i < len; ++i)
+	for (var i = 0; i < count; ++i)
 	{
-		if (!DeepEqual(start_from, interactions[i])) continue;
-		index = i;
-		break;
-	}
-
-	if (index != -1) // Previous item was found in the list.
-	{
-		var previous_interaction = interactions[index];
-		// Cycle interactions of same object (dir == 0).
-		// Or cycle through objects to the right (x_dir==1) or left (x_dir==-1).
-		var cycle_dir = x_dir;
-		var do_cycle_object = x_dir == 0;
-		if (do_cycle_object)
+		if (DeepEqual(previous_interaction, interactions[i]))
 		{
-			cycle_dir = 1;
+			index = i;
+			break;
 		}
+	}
+	Log("Index of current interaction: %d / %v / %v", index, previous_interaction, interactions);
 
-		var found = false;
-		for (var i = 1; i < len; ++i)
+	var next_interaction_index = -1;
+	if (index == -1) // Previous item was not found in the list.
+	{
+		// Find highest priority item.
+		var high_prio = nil;
+		for (var i = 0; i < count; ++i)
 		{
-			index = (index + cycle_dir) % len;
-			if (index < 0)
+			var interaction = interactions[i];
+			if (high_prio == nil || interaction.Priority > high_prio.Priority)
 			{
-				index += len;
+				high_prio = interaction;
+				next_interaction_index = i;
 			}
-			var is_same_object = interactions[index].Target == previous_interaction.Target;
-			if (do_cycle_object == is_same_object)
+		}
+		Log("Next interaction index highest prio: %d", next_interaction_index);
+	}
+	else // Cycle through interactions to the right or left .
+	{
+		next_interaction_index = index;
+		var found = false;
+		for (var i = 1; (i < count) && !found; ++i)
+		{
+			next_interaction_index += cycle_dir;
+			if (next_interaction_index < 0)
+			{
+				next_interaction_index += count;
+			}
+			next_interaction_index = next_interaction_index % count;
+
+			if (!DeepEqual(previous_interaction, interactions[next_interaction_index]))
 			{
 				found = true;
+				Log("Found next at index %d", next_interaction_index);
 
 				// When cycling to the left, make sure to arrive at the first interaction for that object (and not the last).
 				// Otherwise it's pretty unintuitive, why you sometimes grab and sometimes enter the catapult as the first interaction.
-				if (x_dir == -1)
+				if (cycle_dir == -1)
 				{
 					// Fast forward to first interaction.
-					var target_object = interactions[index].Target;
+					var target_object = interactions[next_interaction_index].Target;
 					// It's guaranteed that the interactions are not split over the array borders. So we can just search until the index is 0.
-					for (var current_index = index - 1; current_index >= 0; --current_index)
+					for (var current_index = next_interaction_index - 1; current_index >= 0; --current_index)
 					{
 						if (interactions[current_index].Target == target_object)
 						{
 							index = current_index;
 						}
-						else
-						{
-							break;
-						}
+						//else
+						//{
+						//	break;
+						//}
 					}
 				}
-				break;
+				//break;
 			}
-		}
-
-		if (!found)
-		{
-			index = -1;
-		}
-	}
-	else
-	{
-		// Find highest priority item.
-		var high_prio = nil;
-		for (var i = 0; i < len; ++i)
-		{
-			var interaction = interactions[i];
-			if (high_prio != nil && interaction.priority <= high_prio.priority)
-			{
-				continue;
-			}
-			high_prio = interaction;
-			index = i;
 		}
 	}
 
-	if (index == -1)
+	if (next_interaction_index == nil || next_interaction_index == -1)
 	{
 		return nil;
 	}
-	var next = interactions[index];
-	if (DeepEqual(next, start_from))
+	/*var next =*/ return interactions[next_interaction_index];
+	/*if (DeepEqual(next, start_from))
 	{
 		return nil;
-	}
-	return next;
+	}*/
+	//return next;
 }
 
 func BeginInteract(int ctrl)
@@ -397,14 +390,14 @@ func EndInteract()
 		executed = true;
 	}
 
-	var e = nil;
-	while (e = GetEffect(FxControlInteraction.Name, this))
+	var interaction = nil;
+	while (interaction = GetEffect(FxControlInteraction.Name, this))
 	{
 		if (executed)
 		{
-			e->OnExecute();
+			interaction->OnExecute();
 		}
-		RemoveEffect(nil, this, e);
+		RemoveEffect(nil, this, interaction);
 	}
 
 	SetCurrentInteraction(nil);
@@ -440,7 +433,7 @@ func PushBackInteraction(array to, proplist interaction)
 		extra_data: custom extra_data for an interaction specified by the object
 		actiontype: the kind of interaction. One of the ACTIONTYPE_* constants
 */
-func GetInteractableObjects(int ctrl, array sort)
+func GetInteractionInfos(int ctrl, array sort, bool only_available)
 {
 	var possible_interactions = [];
 
@@ -456,6 +449,10 @@ func GetInteractableObjects(int ctrl, array sort)
 		{
 			for (var interaction in interactable->~GetInteractions(this))
 			{
+				if (only_available && !HasInteraction(interaction))
+				{
+					continue;
+				}
 				if (ctrl == nil || interaction.Control == ctrl)
 				{
 					PushBackInteraction(possible_interactions, interaction);
@@ -503,7 +500,7 @@ func GetInteractables(array sort)
 // Returns the number of interactable objects, which is different from the total number of available interactions.
 func GetInteractableObjectsCount()
 {
-	var interactions = GetInteractableObjects();
+	var interactions = GetInteractionInfos();
 	var interaction_objects = [];
 	for (var interaction in interactions)
 	{
@@ -534,7 +531,7 @@ func HasInteraction(proplist interaction)
 	return false;
 }
 
-// Executes interaction with an object. /action_info/ is a proplist as returned by GetInteractableObjects
+// Executes interaction with an object. /action_info/ is a proplist as returned by GetInteractionInfos
 func ExecuteInteraction(proplist interaction)
 {
 	if (HasInteraction(interaction))

@@ -1,6 +1,8 @@
 /**
 	Marks an object as a throwable weapon.
  */
+ 
+#include Property_Item_Usable
 
 public func IsThrowableWeapon(){ return true; }
 
@@ -46,9 +48,16 @@ func HoldingEnabled() { return true; }
 
 func RejectUse(object user)
 {
-	var can_use = user->~IsWalking();
-	var is_throwing = !!property_weapon.throwable.procedure;
-	return !can_use || is_throwing;
+	if (_inherited(user, ...))
+	{
+		return true;
+	}
+	else
+	{
+		var can_use = user->~IsWalking();
+		var is_throwing = !!property_weapon.throwable.procedure;
+		return !can_use || is_throwing;
+	}
 }
 
 

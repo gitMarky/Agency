@@ -1,4 +1,5 @@
 
+#include Interaction_PickUp
 #include Property_Damage_Lethal
 #include Property_Item_Large
 #include Property_Weapon_Melee

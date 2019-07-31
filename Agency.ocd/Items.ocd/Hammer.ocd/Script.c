@@ -1,4 +1,5 @@
 
+#include Interaction_PickUp
 #include Property_Damage_Stunning
 #include Property_Weapon_Melee
 #include Property_Weapon_SilentAttack

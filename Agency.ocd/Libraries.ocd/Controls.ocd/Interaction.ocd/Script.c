@@ -199,7 +199,11 @@ local FxControlInteraction = new Effect
 		}
 
 		// Finish interacting.
-		if (ctrl == interaction_control && status == CONS_Up)
+		if (ctrl == CON_ModifierMenu1 && !this.Target->~GetMenu())
+		{
+			ctrl = CON_PickUp;
+		}
+		if (ctrl == interaction_control && status == CONS_Up) 
 		{
 			this.Target->EndInteract();
 			return true;

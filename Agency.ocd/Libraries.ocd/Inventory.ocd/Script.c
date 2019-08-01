@@ -298,7 +298,7 @@ func GetSideItem()
 	return this.inventory.carry_only;
 }
 
-func SetSideOnlyItem(object item)
+func SetSideItem(object item)
 {
 	this.inventory.carry_only = item;
 }
@@ -422,7 +422,7 @@ func TryToCollect(object item)
 
 
 // Callback from animation effect
-func TryToPickUp(object item)
+func TryToPickUp(object item, bool collect_to_holster)
 {
 	if (!item)
 	{
@@ -519,37 +519,17 @@ func TrySelectActiveItem(object preferred_item, id preferred_type, bool was_in_h
 }
 
 
-func DoHolsterHandItem(bool reset_active_item)
+func HolsterItem(object item, bool keep_active)
 {
-	var item = GetHandItem();
-	if (item)
+	if (CanHolsterItem(item))
 	{
-		if (item->~IsCarryOnly())
+		if (item && item->~IsLargeItem())
 		{
-			if (reset_active_item)
-			{
-				DropItem(item);
-			}
-			else
-			{
-				return;
-			}
+			SetBackItem(item);
 		}
-		else if (item->~IsLargeItem())
+		if (!keep_active)
 		{
-			if (GetBackItem())
-			{
-				DropItem(item);
-			}
-			else
-			{
-				SetBackItem(item);
-			}
-		}
-		SetHandItem(nil);
-
-		if (reset_active_item)
-		{
+			SetHandItem(nil);
 			SetActiveItem(nil);
 		}
 		this->UpdateAttach();
@@ -571,31 +551,29 @@ func CanHolsterItem(object item)
 		{
 			return GetBackItem() == nil;
 		}
-		// Otherwise you can always holster an item
-		return true;
 	}
-	return false;
+	// Otherwise you can always holster an item (important for drawing items)
+	return true;
 }
 
 
-func CanCollectItem(object item)
+func GetPickUpInfo(object item)
 {
 	var info =
 	{
-		Collectible = false,
-		Holster = nil, // Holsterable right-hand item
+		Holster = nil, // Holster hand item?
 		DropR = nil, // Droppable right-hand item
 		DropL = nil, // Droppable left-hand item
 	};
 	if (item)
 	{
 		// Two handed item and something in left hand?
+		// Left hand item is always dropped
 		if (IsCarriedInBothHands(item) && GetSideItem())
 		{
 			info.DropL = GetSideItem();
 		}
 		// Collect!
-		info.Collectible = true;
 		var current = GetHandItem();
 		if (CanHolsterItem(current))
 		{
@@ -603,7 +581,14 @@ func CanCollectItem(object item)
 		}
 		else // current may be nil, that just means that you swap nothing
 		{
-			info.DropR = current;
+			if (CanHolsterItem(item))
+			{
+				info.Holster = item;
+			}
+			else
+			{
+				info.DropR = current;
+			}
 		}
 	}
 	return info;
@@ -630,15 +615,27 @@ local FxPickUpItem = new Effect
 	{
 		if (!temporary)
 		{
+			var info = this.Target->~GetPickUpInfo(item);
 			this.Item = item;
-			this.Target->~DoHolsterHandItem(true);
+			if (info.DropL)
+			{
+				this.Target->DropItem(info.DropL);
+			}
+			if (info.DropR)
+			{
+				this.Target->DropItem(info.DropR);
+			}
+			else
+			{
+				this.Target->~HolsterItem(info.Holster, item == info.Holster);
+			}
 			this.Target->~PlayAnimation("ThrowArms", CLONK_ANIM_SLOT_Arms, Anim_Linear(1000, 0, 1500, 50, ANIM_Remove), Anim_Linear(0, 0, 1000, 10, ANIM_Remove));
 		}
 	},
 
 	Timer = func ()
 	{
-		this.Target->~TryToPickUp(this.Item);
+		this.Target->~TryToPickUp(this.Item, this.Stash);
 		return FX_Execute_Kill;
 	},
 };
@@ -652,12 +649,19 @@ local FxInventorySwitchItem = new Effect
 	{
 		if (!temporary)
 		{
-			this.StashItem = stash; // Stashes this item away
-			this.DrawItem = draw;   // Draws this item
-			var holster = "Holster";
-			var length = this.Target->GetAnimationLength(holster);
-			this.AnimTime = 30;
-			this.Anim = this.Target->PlayAnimation(holster, CLONK_ANIM_SLOT_Arms, Anim_Linear(length, length, 0, this.AnimTime, ANIM_Remove), Anim_Linear(0, 0, 1000, 10, ANIM_Remove));
+			if (this.Target->CanHolsterItem(stash))
+			{
+				this.StashItem = stash; // Stashes this item away
+				this.DrawItem = draw;   // Draws this item
+				var holster = "Holster";
+				var length = this.Target->GetAnimationLength(holster);
+				this.AnimTime = 30;
+				this.Anim = this.Target->PlayAnimation(holster, CLONK_ANIM_SLOT_Arms, Anim_Linear(length, length, 0, this.AnimTime, ANIM_Remove), Anim_Linear(0, 0, 1000, 10, ANIM_Remove));
+			}
+			else
+			{
+				return FX_Execute_Kill;
+			}
 		}
 	},
 	
@@ -668,11 +672,15 @@ local FxInventorySwitchItem = new Effect
 			// Switch items here
 			if (time == this.AnimTime / 2)
 			{
-				this.Target->DoHolsterHandItem(true);
+				this.Target->HolsterItem(this.StashItem);
 				this.Target->SetHandItem(this.DrawItem);
 				if (this.DrawItem)
 				{
 					this.Target->SetActiveItem(this.DrawItem);
+				}
+				else // Draw the stashed item again
+				{
+					this.Target->SetActiveItem(this.StashItem);
 				}
 				this.Target->UpdateAttach();
 			}

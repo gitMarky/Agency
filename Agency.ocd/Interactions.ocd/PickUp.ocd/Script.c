@@ -34,6 +34,12 @@ func CanBePickedUp(object by_agent, proplist interaction)
 {
 	AssertNotNil(by_agent);
 	AssertNotNil(interaction);
+	
+	var info = by_agent->~GetPickUpInfo(this);
+	if (info && info.DropL || info.DropR)
+	{
+		interaction.Name = "$DescSwap$";
+	}
 
 	interaction.Desc = this->~GetName();
 	return this.Collectible && !Contained();

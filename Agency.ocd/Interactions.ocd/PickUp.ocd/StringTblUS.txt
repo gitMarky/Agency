@@ -1,1 +1,2 @@
 DescPickUp=Pick up
+DescSwap=Swap

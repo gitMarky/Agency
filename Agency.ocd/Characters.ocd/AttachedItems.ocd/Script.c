@@ -51,7 +51,7 @@ public func DetachObject(object item)
 	{
 		DetachItem(this.item_display.hand);
 	}
-	if (this->~GetCarryOnlyItem() == item)
+	if (this->~GetSideItem() == item)
 	{
 		DetachItem(this.item_display.side);
 	}
@@ -87,7 +87,7 @@ func UpdateAttach()
 	}
 	
 	UpdateAttachedItem(this->~GetHandItem(), CARRY_SLOT_MAIN);
-	UpdateAttachedItem(this->~GetCarryOnlyItem(), CARRY_SLOT_SIDE);
+	UpdateAttachedItem(this->~GetSideItem(), CARRY_SLOT_SIDE);
 	UpdateAttachedItem(this->~GetBackItem(), CARRY_SLOT_BACK);
 }
 

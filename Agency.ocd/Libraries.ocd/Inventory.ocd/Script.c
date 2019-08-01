@@ -11,7 +11,7 @@
 	The functions return:
 	- GetHandItem() returns the object in the (right) hand. This is the
 	  item that you will use by default.
-	- GetCarryOnlyItem() returns the object in the (left) hand. This is
+	- GetSideItem() returns the object in the (left) hand. This is
 	  an item that is too just carried and is too larget to sling on
 	  the back.
 	- GetBackItem() returns the object that is carried on your back.
@@ -110,9 +110,9 @@ func Ejection(object item)
 	{
 		SetBackItem(nil);
 	}
-	if (GetCarryOnlyItem() == item)
+	if (GetSideItem() == item)
 	{
-		SetCarryOnlyItem(nil);
+		SetSideItem(nil);
 	}
 	
 	// Get new active item?
@@ -293,12 +293,12 @@ func SetBackItem(object item)
 /**
 	This item is carried in the left hand.
 */
-func GetCarryOnlyItem()
+func GetSideItem()
 {
 	return this.inventory.carry_only;
 }
 
-func SetCarryOnlyItem(object item)
+func SetSideOnlyItem(object item)
 {
 	this.inventory.carry_only = item;
 }
@@ -495,7 +495,7 @@ func TrySelectActiveItem(object preferred_item, id preferred_type, bool was_in_h
 		}
 		for (var item in candidates)
 		{
-			if (item == GetHandItem() || item == GetBackItem() || item == GetCarryOnlyItem())
+			if (item == GetHandItem() || item == GetBackItem() || item == GetSideItem())
 			{
 				continue;
 			}
@@ -555,6 +555,99 @@ func DoHolsterHandItem(bool reset_active_item)
 		this->UpdateAttach();
 	}
 }
+
+
+func CanHolsterItem(object item)
+{
+	if (item)
+	{
+		// These can never be holstered
+		if (item->~IsCarryOnly() || item->~IsCarryHeavy())
+		{
+			return false;
+		}
+		// Only if there is a free slot on your back
+		else if (item->~IsLargeItem())
+		{
+			return GetBackItem() == nil;
+		}
+		// Otherwise you can always holster an item
+		return true;
+	}
+	return false;
+}
+
+
+func CanCollectItem(object item)
+{
+	var info =
+	{
+		Collectible = false,
+		Holster = nil, // Holsterable right-hand item
+		Swap = nil, // Swappable right-hand item
+		Drop = nil, // Droppable left-hand item
+	};
+	if (item)
+	{
+		// Collect to the left hand?
+		if (item->~IsSideItem())
+		{
+			// Left hand can carry one-handed items only
+			if (!IsCarriedInBothHands(item))
+			{
+				info.Collectible = true;
+				SetCollectExchange(GetSideItem(), info);
+			}
+		}
+		// Collect to the right hand?
+		else
+		{
+			// Two handed item?
+			if (IsCarriedInBothHands(item))
+			{
+				// Something in left hand?
+				if (GetSideItem())
+				{
+					info.Drop = GetSideItem();
+				}
+				// Collect!
+				info.Collectible = true;
+				SetCollectExchange(GetHandItem(), info);
+			}
+			// One handed item?
+			else
+			{
+				info.Collectible = true;
+				SetCollectExchange(GetHandItem(), info);
+			}
+		}
+	}
+	return info;
+}
+
+
+func IsCarriedInBothHands(object item)
+{
+	if (item)
+	{
+		return item->~IsCarryHeavy() || item.BothHandedCarry;
+	}
+	return false;
+}
+
+
+func SetCollectExchange(object current, proplist info)
+{
+	if (CanHolsterItem(current))
+	{
+		info.Holster = current;
+	}
+	else // current may be nil, that just means that you swap nothing
+	{
+		info.Swap = current;
+	}
+}
+
 
 /* --- Animations & Effects --- */
 

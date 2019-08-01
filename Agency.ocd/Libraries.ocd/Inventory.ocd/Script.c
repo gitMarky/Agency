@@ -44,209 +44,6 @@ func Construction(object by)
 }
 
 
-/* --- Interface --- */
-
-/**
-	Get the 'i'th item in the inventory
-*/
-func GetItem(int i)
-{
-	if (i < 0 || i >= GetLength(this.inventory.objects))
-	{
-		return nil;
-	}	
-	return this.inventory.objects[i];
-}
-
-/**
-	Returns all items in the inventory
-*/
-func GetItems()
-{
-	var inv = this.inventory.objects[:];
-	RemoveHoles(inv);
-	return inv;
-}
-
-/**
-	Returns how many items are in the clonks inventory
-    Does not have to be the same as ContentCounts() because of objects with special handling, like CarryHeavy
-*/
-func GetItemCount()
-{
-	var count = 0;
-	for (var i = 0; i < GetLength(this.inventory.objects); i++)
-		if (this.inventory.objects[i])
-			count++;
-	
-	return count;
-}
-
-
-/**
-	This item is held in the right hand
-*/
-func GetHandItem()
-{
-	return this.inventory.in_hands;
-}
-
-func SetHandItem(object item)
-{
-	this.inventory.in_hands = item;
-}
-
-
-/**
-	This item is selected for holstering/drawing.
-	This is also the item for the main hand,
-	which may be confusing (and maybe I find a better solution)
-*/
-func GetActiveItem()
-{
-	return this.inventory.active_item;
-}
-
-func SetActiveItem(object item)
-{
-	this.inventory.active_item = item;
-}
-
-
-
-/**
-	This item is carried on the back.
-*/
-func GetBackItem()
-{
-	return this.inventory.on_back;
-}
-
-func SetBackItem(object item)
-{
-	this.inventory.on_back = item;
-}
-
-
-/**
-	This item is carried in the left hand.
-*/
-func GetCarryOnlyItem()
-{
-	return this.inventory.carry_only;
-}
-
-func SetCarryOnlyItem(object item)
-{
-	this.inventory.carry_only = item;
-}
-
-
-/**
-	The player is actively picking something up.
-*/
-func SetCollecting(bool value)
-{
-	this.inventory.force_collection = value;
-}
-
-func IsCollecting()
-{
-	return this.inventory.force_collection;
-}
-
-
-/**
-	Drops the item , if any
-*/
-func DropItem(object item)
-{
-	if (!item || item->~QueryRejectDeparture(this))
-	{
-		return false;
-	}
-	// Notify other libraries of deliberate drop.
-	this->~OnDropped(item);
-	// And make the engine drop the object.
-	//this->AddCommand("Drop", item);
-	if (item)
-	{
-		item->Exit(0, 8);
-	}
-	return true;
-}
-
-
-/**
-	Search for the index of an item
-*/
-func GetItemPos(object item)
-{
-	if (item && item->Contained() == this)
-	{
-		var index = GetIndexOf(this.inventory.objects, item);
-		if (index >= 0)
-		{
-			return index;
-		}
-	}
-	return nil;
-}
-
-/** Switch two items in the clonk's inventory */
-public func Switch2Items(int one, int two)
-{
-/*
-	// no valid inventory index: cancel
-	if (!Inside(one, 0, MaxContentsCount-1)) return;
-	if (!Inside(two, 0, MaxContentsCount-1)) return;
-
-	// switch them around
-	var temp = this.inventory.objects[one];
-	this.inventory.objects[one] = this.inventory.objects[two];
-	this.inventory.objects[two] = temp;
-	
-	// callbacks: cancel use, variable declared in ClonkControl.ocd
-	if (this.control.current_object == this.inventory.objects[one] || this.control.current_object == this.inventory.objects[two])
-		this->~CancelUse();
-	
-	var handone, handtwo;
-	handone = GetHandPosByItemPos(one);
-	handtwo = GetHandPosByItemPos(two);
-	
-	// callbacks: (de)selection
-	if (handone != nil)
-		if (this.inventory.objects[two]) this.inventory.objects[two]->~Deselection(this, one);
-	if (handtwo != nil)
-		if (this.inventory.objects[one]) this.inventory.objects[one]->~Deselection(this, two);
-		
-	if (handone != nil)
-		if (this.inventory.objects[one]) this.inventory.objects[one]->~Selection(this, one);
-	if (handtwo != nil)
-		if (this.inventory.objects[two]) this.inventory.objects[two]->~Selection(this, two);
-	
-	// callbacks: to self, for HUD
-	if (handone != nil)
-	{
-		if (this.inventory.objects[one])
-			this->~OnSlotFull(handone);
-		else
-			this->~OnSlotEmpty(handone);
-	}
-	if (handtwo != nil)
-	{
-		if (this.inventory.objects[two])
-			this->~OnSlotFull(handtwo);
-		else
-			this->~OnSlotEmpty(handtwo);
-	}
-	
-	this->~OnInventoryChange(one, two);
-	this->~UpdateAttach();
-*/
-}
-
-
 /**
 	Overload of Collect function
 	Allows blocking collection via RejectCollect
@@ -339,6 +136,7 @@ func ContentsDestruction(object item)
 	_inherited(item, ...);
 }
 
+
 func RejectCollect(id type, object obj)
 {
 	// Collection of that object magically disabled?
@@ -406,6 +204,213 @@ func GrabContents(object source, ...)
 	return inherited(source, ...);
 }
 
+
+/* --- Interface --- */
+
+/**
+	Get the 'i'th item in the inventory
+*/
+func GetItem(int i)
+{
+	if (i < 0 || i >= GetLength(this.inventory.objects))
+	{
+		return nil;
+	}	
+	return this.inventory.objects[i];
+}
+
+
+/**
+	Returns all items in the inventory
+*/
+func GetItems()
+{
+	var inv = this.inventory.objects[:];
+	RemoveHoles(inv);
+	return inv;
+}
+
+
+/**
+	Returns how many items are in the clonks inventory
+    Does not have to be the same as ContentCounts() because of objects with special handling, like CarryHeavy
+*/
+func GetItemCount()
+{
+	var count = 0;
+	for (var i = 0; i < GetLength(this.inventory.objects); i++)
+		if (this.inventory.objects[i])
+			count++;
+	
+	return count;
+}
+
+
+/**
+	This item is held in the right hand
+*/
+func GetHandItem()
+{
+	return this.inventory.in_hands;
+}
+
+func SetHandItem(object item)
+{
+	this.inventory.in_hands = item;
+}
+
+
+/**
+	This item is selected for holstering/drawing.
+	This is also the item for the main hand,
+	which may be confusing (and maybe I find a better solution)
+*/
+func GetActiveItem()
+{
+	return this.inventory.active_item;
+}
+
+func SetActiveItem(object item)
+{
+	this.inventory.active_item = item;
+}
+
+
+/**
+	This item is carried on the back.
+*/
+func GetBackItem()
+{
+	return this.inventory.on_back;
+}
+
+func SetBackItem(object item)
+{
+	this.inventory.on_back = item;
+}
+
+
+/**
+	This item is carried in the left hand.
+*/
+func GetCarryOnlyItem()
+{
+	return this.inventory.carry_only;
+}
+
+func SetCarryOnlyItem(object item)
+{
+	this.inventory.carry_only = item;
+}
+
+
+/**
+	The player is actively picking something up.
+*/
+func SetCollecting(bool value)
+{
+	this.inventory.force_collection = value;
+}
+
+func IsCollecting()
+{
+	return this.inventory.force_collection;
+}
+
+
+/**
+	Search for the index of an item
+*/
+func GetItemPos(object item)
+{
+	if (item && item->Contained() == this)
+	{
+		var index = GetIndexOf(this.inventory.objects, item);
+		if (index >= 0)
+		{
+			return index;
+		}
+	}
+	return nil;
+}
+
+
+/* --- Internals --- */
+
+/**
+	Drops the item , if any
+*/
+func DropItem(object item)
+{
+	if (!item || item->~QueryRejectDeparture(this))
+	{
+		return false;
+	}
+	// Notify other libraries of deliberate drop.
+	this->~OnDropped(item);
+	// And make the engine drop the object.
+	//this->AddCommand("Drop", item);
+	if (item)
+	{
+		item->Exit(0, 8);
+	}
+	return true;
+}
+
+/** Switch two items in the clonk's inventory */
+public func Switch2Items(int one, int two)
+{
+/*
+	// no valid inventory index: cancel
+	if (!Inside(one, 0, MaxContentsCount-1)) return;
+	if (!Inside(two, 0, MaxContentsCount-1)) return;
+
+	// switch them around
+	var temp = this.inventory.objects[one];
+	this.inventory.objects[one] = this.inventory.objects[two];
+	this.inventory.objects[two] = temp;
+	
+	// callbacks: cancel use, variable declared in ClonkControl.ocd
+	if (this.control.current_object == this.inventory.objects[one] || this.control.current_object == this.inventory.objects[two])
+		this->~CancelUse();
+	
+	var handone, handtwo;
+	handone = GetHandPosByItemPos(one);
+	handtwo = GetHandPosByItemPos(two);
+	
+	// callbacks: (de)selection
+	if (handone != nil)
+		if (this.inventory.objects[two]) this.inventory.objects[two]->~Deselection(this, one);
+	if (handtwo != nil)
+		if (this.inventory.objects[one]) this.inventory.objects[one]->~Deselection(this, two);
+		
+	if (handone != nil)
+		if (this.inventory.objects[one]) this.inventory.objects[one]->~Selection(this, one);
+	if (handtwo != nil)
+		if (this.inventory.objects[two]) this.inventory.objects[two]->~Selection(this, two);
+	
+	// callbacks: to self, for HUD
+	if (handone != nil)
+	{
+		if (this.inventory.objects[one])
+			this->~OnSlotFull(handone);
+		else
+			this->~OnSlotEmpty(handone);
+	}
+	if (handtwo != nil)
+	{
+		if (this.inventory.objects[two])
+			this->~OnSlotFull(handtwo);
+		else
+			this->~OnSlotEmpty(handtwo);
+	}
+	
+	this->~OnInventoryChange(one, two);
+	this->~UpdateAttach();
+*/
+}
+
+
 func TrySelectActiveItem(object preferred_item, id preferred_type, bool was_in_hands)
 {
 	if (GetActiveItem())
@@ -456,6 +461,7 @@ func TrySelectActiveItem(object preferred_item, id preferred_type, bool was_in_h
 		SetHandItem(candidate);
 	}
 }
+
 
 func DoHolsterHandItem(bool reset_active_item)
 {

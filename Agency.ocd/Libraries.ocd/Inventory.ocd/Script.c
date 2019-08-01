@@ -584,32 +584,26 @@ func CanCollectItem(object item)
 	{
 		Collectible = false,
 		Holster = nil, // Holsterable right-hand item
-		Swap = nil, // Swappable right-hand item
-		Drop = nil, // Droppable left-hand item
+		DropR = nil, // Droppable right-hand item
+		DropL = nil, // Droppable left-hand item
 	};
 	if (item)
 	{
-		// Collect to the left hand?
-		if (item->~IsSideItem())
+		// Two handed item and something in left hand?
+		if (IsCarriedInBothHands(item) && GetSideItem())
 		{
-			// Left hand can carry one-handed items only
-			if (!IsCarriedInBothHands(item))
-			{
-				info.Collectible = true;
-				SetCollectExchange(GetSideItem(), info);
-			}
+			info.DropL = GetSideItem();
 		}
-		// Collect to the right hand?
-		else
+		// Collect!
+		info.Collectible = true;
+		var current = GetHandItem();
+		if (CanHolsterItem(current))
 		{
-			// Two handed item and something in left hand?
-			if (IsCarriedInBothHands(item) && GetSideItem())
-			{
-				info.Drop = GetSideItem();
-			}
-			// Collect!
-			info.Collectible = true;
-			SetCollectExchange(GetHandItem(), info);
+			info.Holster = current;
+		}
+		else // current may be nil, that just means that you swap nothing
+		{
+			info.DropR = current;
 		}
 	}
 	return info;
@@ -623,19 +617,6 @@ func IsCarriedInBothHands(object item)
 		return item->~IsCarryHeavy() || item.BothHandedCarry;
 	}
 	return false;
-}
-
-
-func SetCollectExchange(object current, proplist info)
-{
-	if (CanHolsterItem(current))
-	{
-		info.Holster = current;
-	}
-	else // current may be nil, that just means that you swap nothing
-	{
-		info.Swap = current;
-	}
 }
 
 

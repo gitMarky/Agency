@@ -411,6 +411,62 @@ public func Switch2Items(int one, int two)
 }
 
 
+// Pick up item via interaction.
+func TryToCollect(object item)
+{
+	if (!GetEffect(FxPickUpItem.Name, this))
+	{
+		CreateEffect(FxPickUpItem, 1, 10, item);
+	}
+}
+
+
+// Callback from animation effect
+func TryToPickUp(object item)
+{
+	if (!item)
+	{
+		return false;
+	}
+
+	// Remember stuff for a possible message - the item might have removed itself later.
+	var x = item->GetX();
+	var y = item->GetY();
+	var name = item->GetName();
+	
+	// Otherwise, try to collect the item myself.
+	if (item && !item->Contained())
+	{
+		Collect(item);
+	}
+
+	// If anything happened, assume collection.
+	if (!item || item->Contained())
+	{
+		var message = CreateObject(FloatingMessage, AbsX(x), AbsY(y), GetOwner());
+		message.Visibility = VIS_Owner;
+		message->SetMessage(name);
+		message->SetYDir(-10);
+		message->FadeOut(1, 20);
+		return true;
+	}
+	return false;
+}
+
+
+/* Backpack control */
+func Selected(object mnu, object mnu_item)
+{
+	var backpack_index = mnu_item->GetExtraData();
+	var hands_index = 0;
+	// Update menu
+	var show_new_item = this->GetItem(hands_index);
+	mnu_item->SetSymbol(show_new_item);
+	// swap index with backpack index
+	this->Switch2Items(hands_index, backpack_index);
+}
+
+
 func TrySelectActiveItem(object preferred_item, id preferred_type, bool was_in_hands)
 {
 	if (GetActiveItem())
@@ -499,3 +555,69 @@ func DoHolsterHandItem(bool reset_active_item)
 		this->UpdateAttach();
 	}
 }
+
+/* --- Animations & Effects --- */
+
+local FxPickUpItem = new Effect
+{
+	Name = "FxPickUpItem",
+
+	Start = func (int temporary, object item)
+	{
+		if (!temporary)
+		{
+			this.Item = item;
+			this.Target->~DoHolsterHandItem(true);
+			this.Target->~PlayAnimation("ThrowArms", CLONK_ANIM_SLOT_Arms, Anim_Linear(1000, 0, 1500, 50, ANIM_Remove), Anim_Linear(0, 0, 1000, 10, ANIM_Remove));
+		}
+	},
+
+	Timer = func ()
+	{
+		this.Target->~TryToPickUp(this.Item);
+		return FX_Execute_Kill;
+	},
+};
+
+
+local FxInventorySwitchItem = new Effect
+{
+	Name = "FxInventorySwitchItem",
+
+	Start = func (int temporary, object stash, object draw)
+	{
+		if (!temporary)
+		{
+			this.StashItem = stash; // Stashes this item away
+			this.DrawItem = draw;   // Draws this item
+			var holster = "Holster";
+			var length = this.Target->GetAnimationLength(holster);
+			this.AnimTime = 30;
+			this.Anim = this.Target->PlayAnimation(holster, CLONK_ANIM_SLOT_Arms, Anim_Linear(length, length, 0, this.AnimTime, ANIM_Remove), Anim_Linear(0, 0, 1000, 10, ANIM_Remove));
+		}
+	},
+	
+	Timer = func (int time)
+	{
+		if (this.Target->ReadyToAction())
+		{
+			// Switch items here
+			if (time == this.AnimTime / 2)
+			{
+				this.Target->DoHolsterHandItem(true);
+				this.Target->SetHandItem(this.DrawItem);
+				if (this.DrawItem)
+				{
+					this.Target->SetActiveItem(this.DrawItem);
+				}
+				this.Target->UpdateAttach();
+			}
+
+			if (time < this.AnimTime)
+			{
+				return FX_OK;
+			}
+		}
+		return FX_Execute_Kill;
+	},
+};

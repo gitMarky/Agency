@@ -602,24 +602,14 @@ func CanCollectItem(object item)
 		// Collect to the right hand?
 		else
 		{
-			// Two handed item?
-			if (IsCarriedInBothHands(item))
+			// Two handed item and something in left hand?
+			if (IsCarriedInBothHands(item) && GetSideItem())
 			{
-				// Something in left hand?
-				if (GetSideItem())
-				{
-					info.Drop = GetSideItem();
-				}
-				// Collect!
-				info.Collectible = true;
-				SetCollectExchange(GetHandItem(), info);
+				info.Drop = GetSideItem();
 			}
-			// One handed item?
-			else
-			{
-				info.Collectible = true;
-				SetCollectExchange(GetHandItem(), info);
-			}
+			// Collect!
+			info.Collectible = true;
+			SetCollectExchange(GetHandItem(), info);
 		}
 	}
 	return info;

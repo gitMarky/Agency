@@ -1,5 +1,5 @@
 [DefCore]
-id=Interaction_Container
+id=Interaction_Container_Item
 Version=8,0
 Category=C4D_StaticBack
 HideInCreator=true

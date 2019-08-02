@@ -1,6 +1,9 @@
+#include Library_Mission_Script
 
 func InitializePlayer(int player)
 {
+	_inherited(player, ...);
+	
 	// Set zoom and move player to the middle of the scenario.
 	SetPlayerZoomByViewRange(player, LandscapeWidth(), nil, PLRZOOM_Direct);
 	GetCrew(player)->SetPosition(120, 190);

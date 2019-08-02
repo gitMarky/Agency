@@ -1,0 +1,21 @@
+
+CON_Disguise_Name=Disguise
+CON_Disguise_Desc=Change into a disguise.
+
+CON_DragBody_Name=Drag Body
+CON_DragBody_Desc=Start or stop dragging a body.
+
+CON_ExtraSlot_Name=Retrieve
+CON_ExtraSlot_Desc=Retrieve or conceal items in a container, such as a suitcase.
+
+CON_Holster_Name=Holster
+CON_Holster_Desc=Draws an item from your holster, or holsters a drawn item.
+
+CON_Interact_Name=Interact
+CON_Interact_Desc=Performs an interaction with the environment.
+
+CON_Manipulation_Name=Manipulate
+CON_Manipulation_Desc=Causes a distraction.
+
+CON_Place_Name=Place
+CON_Place_Desc=Place objects from you inventory in the environment, instead of dropping or throwing them.

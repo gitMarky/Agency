@@ -14,11 +14,13 @@
 
 local InteractionDistance = 12;
 
+
 func Construction()
 {
 	this.control.is_interacting = false;
 	return _inherited(...);
 }
+
 
 func OnShiftCursor(object new_cursor)
 {
@@ -29,284 +31,314 @@ func OnShiftCursor(object new_cursor)
 	return _inherited(new_cursor, ...);
 }
 
+
 func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, int status)
 {
 	if (!this)
 	{
-		return inherited(plr, ctrl, x, y, strength, repeat, status, ...);
+		return false;
 	}
 
 	// Begin interaction.
-	if (ctrl == CON_Interact && status == CONS_Down)
+	if (IsInteractionControl(ctrl) && status == CONS_Down)
 	{
 		this->CancelUse();
-		BeginInteract();
+		BeginInteract(ctrl);
 		return true;
-	}
-
-	// Switch object or finish interaction?
-	if (this.control.is_interacting)
-	{
-		// Stop picking up.
-		if (ctrl == CON_InteractNext_Stop)
-		{
-			AbortInteract();
-			return true;
-		}
-
-		// Finish picking up (aka "collect").
-		if (ctrl == CON_Interact && status == CONS_Up)
-		{
-			EndInteract();
-			return true;
-		}
-
-		// Switch left/right through objects.
-		var dir = nil;
-		if (ctrl == CON_InteractNext_Left)
-		{
-			dir = -1;
-		}
-		else if (ctrl == CON_InteractNext_Right)
-		{
-			dir = 1;
-		}
-		else if (ctrl == CON_InteractNext_CycleObject)
-		{
-			dir = 0;
-		}
-
-		if (dir != nil)
-		{
-			var item = FindNextInteraction(GetCurrentInteraction(), dir);
-			if (item)
-			{
-				SetNextInteraction(item);
-			}
-			return true;
-		}
 	}
 
 	return inherited(plr, ctrl, x, y, strength, repeat, status, ...);
 }
 
-private func FxIntHighlightInteractionStart(object target, proplist fx, temp, proplist interaction, int nr_interactions)
-{
-	if (temp)
-	{
-		return;
-	}
-	fx.obj = interaction.Target;
-	fx.interaction = interaction;
-	fx.interaction_help = target.control.interaction_hud_controller->GetInteractionHelp(interaction, target);
 
-	fx.dummy = CreateObject(Dummy, fx.obj->GetX() - GetX(), fx.obj->GetY() - GetY(), GetOwner());
-	fx.dummy.ActMap =
+local FxControlInteraction = new Effect
+{
+	Name = "FxControlInteraction",
+
+	Start = func (int temp, proplist interaction, bool has_multiple)
 	{
-		Attach =
+		if (!temp)
 		{
-			Name = "Attach",
-			Procedure = DFA_ATTACH,
-			FacetBase = 1
+			this.obj = interaction.Target;
+			this.interaction = interaction;
+			this.interaction_help = this.Target.control.interaction_hud_controller->GetInteractionHelp(interaction, this.Target);
+		
+			CreateDummy(has_multiple);
 		}
-	};
-	fx.dummy.Visibility = VIS_Owner;
-	// The selector's plane should be just behind the Clonk for stuff that usually is behind the Clonk.
-	// Otherwise, it looks rather odd when the catapult shines through the Clonk.
-	if (fx.obj.Plane < this.Plane)
+	},
+	
+	Timer = func (int time)
 	{
-		fx.dummy.Plane = this.Plane - 1;
-	}
-	else
-	{
-		fx.dummy.Plane = 1000;
-	}
-	var multiple_interactions_hint = "";
-	if (fx.interaction.has_multiple_interactions)
-	{
-		multiple_interactions_hint = Format("|<c 999999>[%s] $More$..</c>", GetPlayerControlAssignment(GetOwner(), CON_Up, true, false));
-	}
-	var cycle_interactions_hint = "";
-	if (nr_interactions > 1)
-	{
-		cycle_interactions_hint = Format("|<c 999999>[%s/%s] $Cycle$..</c>", GetPlayerControlAssignment(GetOwner(), CON_Left, true, false), GetPlayerControlAssignment(GetOwner(), CON_Right, true, false));
-	}
-	fx.dummy->Message("@<c eeffee>%s</c>%s%s|", fx.interaction_help.help_text, multiple_interactions_hint, cycle_interactions_hint);
-
-	// Center dummy!
-	fx.dummy->SetVertexXY(0, fx.obj->GetVertex(0, VTX_X), fx.obj->GetVertex(0, VTX_Y));
-	fx.dummy->SetAction("Attach", fx.obj);
-
-	fx.width  = fx.obj->GetDefWidth();
-	fx.height = fx.obj->GetDefHeight();
-
-	// Draw the item's graphics in front of it again to achieve a highlighting effect.
-	fx.dummy->SetGraphics(nil, nil, 1, GFXOV_MODE_Object, nil, GFX_BLIT_Additive, fx.obj);
-
-	var custom_selector = nil;
-	if (fx.obj)
-	{
-		custom_selector = fx.obj->~DrawCustomInteractionSelector(fx.dummy, target, fx.interaction.interaction_index, fx.interaction.extra_data);
-	}
-
-	if (!custom_selector)
-	{
-		fx.scheduled_selection_particle = (FrameCounter() - this.control.interaction_start_time) < 10;
-		if (!fx.scheduled_selection_particle)
+		if (!this.dummy) return -1;
+		if (!this.obj) return -1;
+	
+		if (this.scheduled_selection_particle && time > 10)
 		{
-			EffectCall(nil, fx, "CreateSelectorParticle");
+			this->CreateSelectorParticle();
+			this.scheduled_selection_particle = false;
 		}
-	}
-	else
+	},
+	
+	Stop = func (int reason, temp)
 	{
-		// Note that custom selectors are displayed immediately - particle because they might e.g. move the dummy.
-		fx.scheduled_selection_particle = false;
-	}
-}
-
-func FxIntHighlightInteractionCreateSelectorParticle(object target, effect fx)
-{
-	// Failsafe.
-	if (!fx.dummy) return;
-
-	// Draw a nice selector particle on item change.
-	var selector =
+		if (temp) return;
+		if (this.dummy) this.dummy->RemoveObject();
+		if (!this) return;
+	},
+	
+	OnExecute = func ()
 	{
-		Size = PV_Step(5, 2, 1, Max(fx.width, fx.height)),
-		Attach = ATTACH_Front,
-		Rotation = PV_Step(1, PV_Random(0, 360), 1),
-		Alpha = 200
-	};
-
-	fx.dummy->CreateParticle("Selector", 0, 0, 0, 0, 0, Particles_Colored(selector, GetPlayerColor(GetOwner())), 1);
-}
-
-func FxIntHighlightInteractionTimer(object target, proplist fx, int time)
-{
-	if (!fx.dummy) return -1;
-	if (!fx.obj) return -1;
-
-	if (fx.scheduled_selection_particle && time > 10)
+		if (!this.obj || !this.dummy) return;
+		var message = this.dummy->CreateObject(FloatingMessage, 0, 0, GetOwner());
+		message.Visibility = VIS_Owner;
+		message->SetMessage(Format("%s||", this.interaction_help.help_text));
+		message->SetYDir(-10);
+		message->FadeOut(1, 20);
+	},
+	
+	GetOwner = func ()
 	{
-		EffectCall(nil, fx, "CreateSelectorParticle");
-		fx.scheduled_selection_particle = false;
-	}
-}
+		return this.Target->GetOwner();
+	},
+	
+	CreateSelectorParticle = func ()
+	{
+		// Failsafe.
+		if (!this.dummy) return;
+	
+		// Draw a nice selector particle on item change.
+		var selector =
+		{
+			Size = PV_Step(5, 2, 1, Max(this.width, this.height)),
+			Attach = ATTACH_Front,
+			Rotation = PV_Step(1, PV_Random(0, 360), 1),
+			Alpha = 200
+		};
+	
+		this.dummy->CreateParticle("Selector", 0, 0, 0, 0, 0, Particles_Colored(selector, GetPlayerColor(GetOwner())), 1);
+	},
 
-func FxIntHighlightInteractionStop(object target, proplist fx, int reason, temp)
-{
-	if (temp) return;
-	if (fx.dummy) fx.dummy->RemoveObject();
-	if (!this) return;
-}
+	CreateDummy = func (bool has_multiple)
+	{
+		this.dummy = this.Target->CreateObject(Dummy, this.obj->GetX() - this.Target->GetX(), this.obj->GetY() - this.Target->GetY(), GetOwner());
+		this.dummy.ActMap =
+		{
+			Attach =
+			{
+				Name = "Attach",
+				Procedure = DFA_ATTACH,
+				FacetBase = 1
+			}
+		};
+		this.dummy.Visibility = VIS_Owner;
+		// The selector's plane should be just behind the Clonk for stuff that usually is behind the Clonk.
+		// Otherwise, it looks rather odd when the catapult shines through the Clonk.
+		if (this.obj.Plane < this.Plane)
+		{
+			this.dummy.Plane = this.Plane - 1;
+		}
+		else
+		{
+			this.dummy.Plane = 1000;
+		}
+		var cycle_interactions_hint = "";
+		if (has_multiple)
+		{
+			cycle_interactions_hint = Format("|<c 999999>[%s/%s] $Cycle$..</c>", GetPlayerControlAssignment(GetOwner(), CON_Left, true, false), GetPlayerControlAssignment(GetOwner(), CON_Right, true, false));
+		}
+		this.dummy->Message("@<c eeffee>%s</c>%s|", this.interaction_help.help_text, cycle_interactions_hint);
+	
+		// Center dummy!
+		this.dummy->SetVertexXY(0, this.obj->GetVertex(0, VTX_X), this.obj->GetVertex(0, VTX_Y));
+		this.dummy->SetAction("Attach", this.obj);
+	
+		this.width  = this.obj->GetDefWidth();
+		this.height = this.obj->GetDefHeight();
+	
+		// Draw the item's graphics in front of it again to achieve a highlighting effect.
+		this.dummy->SetGraphics(nil, nil, 1, GFXOV_MODE_Object, nil, GFX_BLIT_Additive, this.obj);
+	
+		var custom_selector = nil;
+		if (this.obj)
+		{
+			custom_selector = this.obj->~DrawCustomInteractionSelector(this.dummy, this.Target, this.interaction.interaction_index, this.interaction.extra_data);
+		}
+	
+		if (!custom_selector)
+		{
+			this.scheduled_selection_particle = (FrameCounter() - this.Target.control.interaction_start_time) < 10;
+			if (!this.scheduled_selection_particle)
+			{
+				this->CreateSelectorParticle();
+			}
+		}
+		else
+		{
+			// Note that custom selectors are displayed immediately - particle because they might e.g. move the dummy.
+			this.scheduled_selection_particle = false;
+		}
+	},
 
-func FxIntHighlightInteractionOnExecute(object target, proplist fx)
-{
-	if (!fx.obj || !fx.dummy) return;
-	var message = fx.dummy->CreateObject(FloatingMessage, 0, 0, GetOwner());
-	message.Visibility = VIS_Owner;
-	message->SetMessage(Format("%s||", fx.interaction_help.help_text));
-	message->SetYDir(-10);
-	message->FadeOut(1, 20);
-}
+	Control = func (int ctrl, int x, int y, int strength, bool repeat, int status)
+	{
+		var interaction_control = this.Target->GetCurrentInteraction().Control;
 
-func SetNextInteraction(proplist to)
+		// Stop interacting.
+		if (ctrl == CON_Down || ctrl == CON_PickUpNext_Stop || ctrl == CON_InteractNext_Stop)
+		{
+			this.Target->AbortInteract();
+			return true;
+		}
+
+		// Finish interacting.
+		if (ctrl == CON_ModifierMenu1 && !this.Target->~GetMenu())
+		{
+			ctrl = CON_PickUp;
+		}
+		if (ctrl == interaction_control && status == CONS_Up) 
+		{
+			this.Target->EndInteract();
+			return true;
+		}
+
+		// Switch left/right through objects.
+		var dir = nil;
+		if (ctrl == CON_Left || ctrl == CON_PickUpNext_Left || ctrl == CON_InteractNext_Left)
+		{
+			dir = -1;
+		}
+		else if (ctrl == CON_Right || ctrl == CON_PickUpNext_Right || ctrl == CON_InteractNext_Right)
+		{
+			dir = 1;
+		}
+
+		if (dir != nil)
+		{
+			var item = this.Target->FindNextInteraction(interaction_control, this.Target->GetCurrentInteraction(), dir, true);
+			if (item)
+			{
+				this.Target->SetNextInteraction(item);
+			}
+			return true;
+		}
+		
+		// Stop interacting if another button is pressed.
+		if (ctrl != interaction_control)
+		{
+			this.Target->AbortInteract();
+			return true;
+		}
+	},
+};
+
+
+func SetNextInteraction(proplist interaction, bool has_multiple)
 {
 	// Clear all old markers.
-	var e = nil;
-	while (e = GetEffect("IntHighlightInteraction", this))
-		RemoveEffect(nil, this, e);
+	var control;
+	while (control = GetEffect(FxControlInteraction.Name, this))
+	{
+		RemoveEffect(nil, this, control);
+	}
 	// And set & mark new one.
-	SetCurrentInteraction(to);
-	var interaction_cnt = GetInteractableObjectsCount();
-	if (to)
-		AddEffect("IntHighlightInteraction", this, 1, 2, this, nil, to, interaction_cnt);
+	SetCurrentInteraction(interaction);
+	if (interaction)
+	{
+		CreateEffect(FxControlInteraction, 1, 2, interaction, has_multiple);
+	}
 }
 
-func FindNextInteraction(proplist start_from, int x_dir)
+
+func FindNextInteraction(int ctrl, proplist previous_interaction, int cycle_dir)
 {
 	var starting_object = this;
-	if (start_from && start_from.Target)
-		starting_object = start_from.Target;
-	var sort = Sort_Func("Library_ClonkInventoryControl_Sort_Priority", starting_object->GetX());
-	var interactions = GetInteractableObjects(sort);
-	var len = GetLength(interactions);
-	if (!len) return nil;
-	// Find object next to the current one.
-	// (note that index==-1 accesses the last element)
-	var index = -1;
-	// GetIndexOf does not use DeepEqual, so work around that here.
-	for (var i = 0; i < len; ++i)
+	if (previous_interaction && previous_interaction.Target)
 	{
-		if (!DeepEqual(start_from, interactions[i])) continue;
-		index = i;
-		break;
+		starting_object = previous_interaction.Target;
+	}
+	var sort = Sort_Func("Library_ClonkInventoryControl_Sort_Priority", starting_object->GetX());
+	var interactions = GetInteractionInfos(ctrl, sort);
+	var count = GetLength(interactions);
+	if (!count)
+	{
+		return nil;
+	}
+	// Find object next to the current one.
+	// (note that index == -1 accesses the last element)
+	var index = -1;
+	// Determine index of the previous interaction 
+	// GetIndexOf does not use DeepEqual, so work around that here.
+	// DeepEqual is not suitable because we count when the condition
+	// was evaluated the last time.
+	for (var i = 0; i < count; ++i)
+	{
+		if (IsSameInteraction(previous_interaction, interactions[i]))
+		{
+			index = i;
+			break;
+		}
 	}
 
-	if (index != -1) // Previous item was found in the list.
+	var next_interaction_index = -1;
+	if (index == -1) // Previous item was not found in the list.
 	{
-		var previous_interaction = interactions[index];
-		// Cycle interactions of same object (dir == 0).
-		// Or cycle through objects to the right (x_dir==1) or left (x_dir==-1).
-		var cycle_dir = x_dir;
-		var do_cycle_object = x_dir == 0;
-		if (do_cycle_object) cycle_dir = 1;
-
-		var found = false;
-		for (var i = 1; i < len; ++i)
+		// Find highest priority item.
+		var high_prio = nil;
+		for (var i = 0; i < count; ++i)
 		{
-			index = (index + cycle_dir) % len;
-			if (index < 0) index += len;
-			var is_same_object = interactions[index].Target == previous_interaction.Target;
-			if (do_cycle_object == is_same_object)
+			var interaction = interactions[i];
+			if (high_prio == nil || interaction.Priority > high_prio.Priority)
+			{
+				high_prio = interaction;
+				next_interaction_index = i;
+			}
+		}
+	}
+	else // Cycle through interactions to the right or left .
+	{
+		next_interaction_index = index;
+		var found = false;
+		for (var i = 1; (i < count) && !found; ++i)
+		{
+			next_interaction_index += cycle_dir;
+			if (next_interaction_index < 0)
+			{
+				next_interaction_index += count;
+			}
+			next_interaction_index = next_interaction_index % count;
+
+			if (!IsSameInteraction(previous_interaction, interactions[next_interaction_index]))
 			{
 				found = true;
 
 				// When cycling to the left, make sure to arrive at the first interaction for that object (and not the last).
 				// Otherwise it's pretty unintuitive, why you sometimes grab and sometimes enter the catapult as the first interaction.
-				if (x_dir == -1)
+				if (cycle_dir == -1)
 				{
 					// Fast forward to first interaction.
-					var target_object = interactions[index].Target;
+					var target_object = interactions[next_interaction_index].Target;
 					// It's guaranteed that the interactions are not split over the array borders. So we can just search until the index is 0.
-					for (var current_index = index - 1; current_index >= 0; --current_index)
+					for (var current_index = next_interaction_index - 1; current_index >= 0; --current_index)
 					{
 						if (interactions[current_index].Target == target_object)
 						{
 							index = current_index;
 						}
-						else
-						{
-							break;
-						}
 					}
 				}
-				break;
 			}
 		}
-
-		if (!found) index = -1;
 	}
-	else
+
+	if (next_interaction_index == nil || next_interaction_index == -1)
 	{
-		// Find highest priority item.
-		var high_prio = nil;
-		for (var i = 0; i < len; ++i)
-		{
-			var interaction = interactions[i];
-			if (high_prio != nil && interaction.priority <= high_prio.priority) continue;
-			high_prio = interaction;
-			index = i;
-		}
+		return nil;
 	}
-
-	if (index == -1) return nil;
-	var next = interactions[index];
-	if (DeepEqual(next, start_from)) return nil;
-	return next;
+	return interactions[next_interaction_index];
 }
 
-func BeginInteract()
+
+func BeginInteract(int ctrl)
 {
 	this.control.interaction_hud_controller = this->GetHUDController();
 	this.control.is_interacting = true;
@@ -315,11 +347,19 @@ func BeginInteract()
 	// Force update the HUD controller, which is responsible for pre-selecting the "best" object.
 	this.control.interaction_hud_controller->UpdateInteractionObject();
 	// Then, iff the HUD shows an object, pre-select one.
-	var interaction = GetCurrentInteraction();
+	var interactions = GetInteractionInfos(ctrl, nil);
+	var interaction = interactions[0];
 	if (interaction)
-		SetNextInteraction(interaction);
-	this.control.interaction_hud_controller->EnableInteractionUpdating(false);
+	{
+		SetNextInteraction(interaction, GetLength(interactions) > 1);
+		this.control.interaction_hud_controller->EnableInteractionUpdating(false);
+	}
+	else
+	{
+		AbortInteract();
+	}
 }
+
 
 // Stops interaction selection without executing the current selection.
 func AbortInteract()
@@ -327,6 +367,7 @@ func AbortInteract()
 	SetCurrentInteraction(nil);
 	EndInteract();
 }
+
 
 func EndInteract()
 {
@@ -339,37 +380,20 @@ func EndInteract()
 		executed = true;
 	}
 
-	var e = nil;
-	while (e = GetEffect("IntHighlightInteraction", this))
+	var interaction = nil;
+	while (interaction = GetEffect(FxControlInteraction.Name, this))
 	{
 		if (executed)
-			EffectCall(this, e, "OnExecute");
-		RemoveEffect(nil, this, e);
+		{
+			interaction->OnExecute();
+		}
+		RemoveEffect(nil, this, interaction);
 	}
 
 	SetCurrentInteraction(nil);
 	this.control.interaction_hud_controller->EnableInteractionUpdating(true);
 }
 
-/**
-	Wraps "PushBack", but also sets a flag when two interactions of the same object exist.
-*/
-func PushBackInteraction(array to, proplist interaction)
-{
-	PushBack(to, interaction);
-	var count = 0;
-	for (var other in to)
-	{
-		if (other.Target && (other.Target == interaction.Target))
-		{
-			count += 1;
-			if (count > 1 || other != interaction)
-			{
-				other.has_multiple_interactions = true;
-			}
-		}
-	}
-}
 
 /**
 	Returns an array containing proplists with information about the interactable actions.
@@ -380,7 +404,7 @@ func PushBackInteraction(array to, proplist interaction)
 		extra_data: custom extra_data for an interaction specified by the object
 		actiontype: the kind of interaction. One of the ACTIONTYPE_* constants
 */
-func GetInteractableObjects(array sort)
+func GetInteractionInfos(int ctrl, array sort)
 {
 	var possible_interactions = [];
 
@@ -396,26 +420,29 @@ func GetInteractableObjects(array sort)
 		{
 			for (var interaction in interactable->~GetInteractions(this))
 			{
-				PushBackInteraction(possible_interactions, interaction);
+				if (HasInteraction(interaction) && (ctrl == nil || interaction.Control == ctrl))
+				{
+					PushBack(possible_interactions, interaction);
+				}
 			}
 		}
 	}
-	
-	// Very simple...
-	SetCurrentInteraction(possible_interactions[0]);
 
 	return possible_interactions;
 }
+
 
 func GetCurrentInteraction()
 {
 	return this.control.current_interaction;
 }
 
+
 func SetCurrentInteraction(proplist interaction)
 {
 	this.control.current_interaction = interaction;
 }
+
 
 func GetInteractables(array sort)
 {
@@ -437,18 +464,6 @@ func GetInteractables(array sort)
 		               sort);
 }
 
-// Returns the number of interactable objects, which is different from the total number of available interactions.
-func GetInteractableObjectsCount()
-{
-	var interactions = GetInteractableObjects();
-	var interaction_objects = [];
-	for (var interaction in interactions)
-	{
-		PushBack(interaction_objects, interaction.Target);
-	}
-	RemoveDuplicates(interaction_objects);
-	return GetLength(interaction_objects);
-}
 
 func HasInteraction(proplist interaction)
 {
@@ -471,7 +486,19 @@ func HasInteraction(proplist interaction)
 	return false;
 }
 
-// Executes interaction with an object. /action_info/ is a proplist as returned by GetInteractableObjects
+
+func IsSameInteraction(proplist a, proplist b)
+{
+	// Do not factor in:
+	// - Description, name, because purely cosmetical
+	// - Condition, IsAvailable, because those both need to be valid anyway
+	return (a.Target == b.Target)
+	    && (a.Control == b.Control)
+	    && (a.Execute == b.Execute);
+}
+
+
+// Executes interaction with an object. /action_info/ is a proplist as returned by GetInteractionInfos
 func ExecuteInteraction(proplist interaction)
 {
 	if (HasInteraction(interaction))
@@ -479,6 +506,7 @@ func ExecuteInteraction(proplist interaction)
 		interaction.Target->Call(interaction.Execute, this, interaction);
 	}
 }
+
 
 static const Interaction = new Global 
 {
@@ -488,6 +516,7 @@ static const Interaction = new Global
 	Name = nil,       // string, name of the interaction
 	Desc = nil,       // string, optional, description
 	Condition = nil,  // function, optional, the interaction is available only when this condition is true
+	Control = CON_Interact, // int, required, the button that is triggers the interaction
 	Execute = nil,    // function, required, call this when executing the interaction
 	
 	// These variables are internal

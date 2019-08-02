@@ -60,7 +60,7 @@ public func UpdateInteractionObject()
 		return;
 	}
 
-	var interactions = cursor->~GetInteractableObjects();
+	var interactions = cursor->~GetInteractionInfos();
 	if (!interactions || !GetLength(interactions))
 	{
 		HideInteractions();
@@ -113,9 +113,9 @@ func ShowInteraction(proplist interaction, bool show)
 			{
 				var message = CreateObject(FloatingMessage, 0, 0, GetOwner());
 				message.Visibility = VIS_Owner;
-				message->SetMessage(interaction.Name);
+				message->SetMessage(Format("[%s] %s: %s", GetPlayerControlAssignment(GetOwner(), interaction.Control, true, false), interaction.Name, interaction.Desc));
 				message->SetSpeed(0, 0);
-		
+
 				interaction_display[target] = message;
 				interaction.Display = message;
 			}

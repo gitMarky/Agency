@@ -1,5 +1,7 @@
 
+#include Interaction_PickUp
 #include Property_Damage_Lethal
+#include Property_Item_CarryOnly
 #include Property_Weapon_Melee
 #include Property_Weapon_SilentAttack
 #include Property_Weapon_Throwable

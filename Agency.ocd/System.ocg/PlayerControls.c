@@ -13,3 +13,16 @@ global func PlayerControl(int player, int control, id spec_id, int x, int y, int
 
 	return _inherited(player, control, spec_id, x, y, strength, repeat, status);
 }
+
+
+// Control has the goal of interacting with some other object (Interaction, Grabbing, Entering,...).
+global func IsInteractionControl(int ctrl)
+{
+	return ctrl == CON_Interact
+		|| ctrl == CON_Attack
+		|| ctrl == CON_Disguise
+		|| ctrl == CON_DragBody
+		|| ctrl == CON_ExtraSlot
+		|| ctrl == CON_Manipulation
+	    || ctrl == CON_PickUp;
+}

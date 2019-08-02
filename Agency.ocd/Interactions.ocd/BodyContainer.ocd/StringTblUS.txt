@@ -1,0 +1,2 @@
+DescConceal=Conceal item
+DescRetrieve=Retrieve item

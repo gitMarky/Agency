@@ -46,14 +46,6 @@ func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, i
 		BeginInteract(ctrl);
 		return true;
 	}
-	
-	// Switch object or finish interaction?
-	
-	var interaction_control = this.control.is_interacting;
-	if (interaction_control)
-	{
-
-	}
 
 	return inherited(plr, ctrl, x, y, strength, repeat, status, ...);
 }

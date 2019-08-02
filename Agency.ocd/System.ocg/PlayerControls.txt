@@ -7,57 +7,90 @@
 	Hold=1
 
 	[ControlDef]
-	Identifier=Holster
-	GUIName=$CON_Holster_Name$
-	GUIDesc=$CON_Holster_Desc$
-	
+	Identifier=Disguise
+	GUIName=$CON_Disguise_Name$
+	GUIDesc=$CON_Disguise_Desc$
+	Hold=1
+
 	[ControlDef]
-	Identifier=Place
-	GUIName=$CON_Place_Name$
-	GUIDesc=$CON_Place_Desc$
-	
+	Identifier=DragBody
+	GUIName=$CON_DragBody_Name$
+	GUIDesc=$CON_DragBody_Desc$
+	Hold=1
+
 	[ControlDef]
 	Identifier=ExtraSlot
 	GUIName=$CON_ExtraSlot_Name$
 	GUIDesc=$CON_ExtraSlot_Desc$
 	Hold=1
 
+	[ControlDef]
+	Identifier=Holster
+	GUIName=$CON_Holster_Name$
+	GUIDesc=$CON_Holster_Desc$
+	
+	[ControlDef]
+	Identifier=Manipulation
+	GUIName=$CON_Manipulation_Name$
+	GUIDesc=$CON_Manipulation_Desc$
+	Hold=1
+	
+	[ControlDef]
+	Identifier=Place
+	GUIName=$CON_Place_Name$
+	GUIDesc=$CON_Place_Desc$
+	
 
 [ControlSets]
 
 	[ControlSet]
 	Name=*
 
-		//----------
-
 		[Assignment]
 		Key=Q
 		Control=Attack
-
-		[Assignment]
-		Key=E
-		Control=Interact
 
 		[Assignment]
 		Key=I
 		Control=Contents
 		
 		[Assignment]
-		Key=H
-		Control=Holster
-
+		Key=P
+		Control=Drop
+		
+		[Assignment]
+		Key=T
+		Control=Disguise
+		
+		[Assignment]
+		Key=B
+		Control=DragBody
+		
 		[Assignment]
 		Key=P
 		Control=Drop
 		
 		[Assignment]
-		Key=O
-		Control=Place
+		Key=Z
+		Control=ExtraSlot
 		
+		[Assignment]
+		Key=H
+		Control=Holster
+		
+		[Assignment]
+		Key=E
+		Control=Interact
+		
+		[Assignment]
+		Key=G
+		Control=Manipulation
+
 		[Assignment]
 		Key=F
 		Control=PickUp
 
 		[Assignment]
-		Key=Z
-		Control=ExtraSlot
+		Key=O
+		Control=Place
+	

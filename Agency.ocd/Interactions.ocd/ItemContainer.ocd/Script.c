@@ -1,7 +1,7 @@
 /**
 	Container
 
-	This item functions as a container.
+	This item functions as a container for items.
 	
 	The property
 	- this.ContainerControl defines which control is used for concealing/retrieving items

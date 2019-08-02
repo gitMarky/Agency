@@ -1,2 +1,2 @@
-DescConceal=Conceal item
-DescRetrieve=Retrieve item
+DescDump=Dump
+DescEnter=Enter

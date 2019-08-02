@@ -19,6 +19,10 @@ global func PlayerControl(int player, int control, id spec_id, int x, int y, int
 global func IsInteractionControl(int ctrl)
 {
 	return ctrl == CON_Interact
-	    || ctrl == CON_PickUp
-		|| ctrl == CON_ExtraSlot;
+		|| ctrl == CON_Attack
+		|| ctrl == CON_Disguise
+		|| ctrl == CON_DragBody
+		|| ctrl == CON_ExtraSlot
+		|| ctrl == CON_Manipulation
+	    || ctrl == CON_PickUp;
 }

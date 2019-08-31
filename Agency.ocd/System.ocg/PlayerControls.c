@@ -18,11 +18,18 @@ global func PlayerControl(int player, int control, id spec_id, int x, int y, int
 // Control has the goal of interacting with some other object (Interaction, Grabbing, Entering,...).
 global func IsInteractionControl(int ctrl)
 {
-	return ctrl == CON_Interact
-		|| ctrl == CON_Attack
-		|| ctrl == CON_Disguise
-		|| ctrl == CON_DragBody
-		|| ctrl == CON_ExtraSlot
-		|| ctrl == CON_Manipulation
-	    || ctrl == CON_PickUp;
+	return IsValueInArray(GetInteractionControls(), ctrl);
+}
+
+global func GetInteractionControls()
+{
+	return [
+		CON_Interact,
+		CON_Attack,
+		CON_Disguise,
+		CON_DragBody,
+		CON_ExtraSlot,
+		CON_Manipulation,
+		CON_PickUp
+	];
 }

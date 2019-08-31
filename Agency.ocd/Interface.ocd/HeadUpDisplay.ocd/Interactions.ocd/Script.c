@@ -11,47 +11,20 @@ local interaction_display;
 func Construction()
 {
 	interaction_display = {};
-	EnableInteractionUpdating(true);
 	return _inherited(...);
 }
 
 func Destruction()
 {
 	HideInteractions();
-	EnableInteractionUpdating(false);
 	_inherited(...);
 }
 
 
-/* --- Timer --- */
-
-local FxIntUpdateInteraction = new Effect
-{
-	Name = "IntUpdateInteraction",
-	
-	Timer = func ()
-	{
-		this.Target->UpdateInteractionObject();
-	}
-};
-
-public func EnableInteractionUpdating(bool enable)
-{
-	var fx = GetEffect(FxIntUpdateInteraction.Name, this);
-	if (fx && !enable)
-	{
-		RemoveEffect(nil, nil, fx);
-	}
-	else if (!fx && enable)
-	{
-		CreateEffect(FxIntUpdateInteraction, 1, 10);
-	}
-}
-
 /**
-	Searches for interactable objects and updates the display.
+	Updates the display.
 */
-public func UpdateInteractionObject()
+public func UpdateInteractionDisplay()
 {
 	var cursor = GetCursor(GetOwner());
 	if (!cursor || !cursor->GetCrewEnabled())
@@ -59,21 +32,29 @@ public func UpdateInteractionObject()
 		HideInteractions();
 		return;
 	}
-
-	var interactions = cursor->~GetInteractionInfos();
-	if (!interactions || !GetLength(interactions))
-	{
-		HideInteractions();
-		return;
-	}
+	
+	var has_interactions = false;
 
 	// Display the interactions
-	for (var interaction in interactions)
+	for (var ctrl in GetInteractionControls())
 	{
-		// Do a dumb display for now
-		ShowInteraction(interaction, cursor->~HasInteraction(interaction));
+		var interactions = cursor->GetInteractionData(ctrl);
+		if (GetLength(interactions) > 0)
+		{
+			has_interactions = true;
+			// Do a dumb display for now
+			var interaction = interactions[0];
+			ShowInteraction(interaction, cursor->~HasInteraction(interaction));
+		}
+	}
+	
+	// Hide if there are none?
+	if (!has_interactions)
+	{
+		HideInteractions();
 	}
 }
+
 
 // Does hide the interaction
 func HideInteractions()

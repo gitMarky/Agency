@@ -7,14 +7,20 @@
 
 local InteractionDistance = 12;
 
+/* --- Engine Callbacks --- */
 
-func Construction()
+func Construction(object by)
 {
-	CreateProplist("interaction", CreateProplist("control"));
+	CreateProplist("data", CreateProplist("interaction", CreateProplist("control")));
 	this.control.interaction.is_interacting = false; // whether interaction is in progress (user is holding [space])
 	this.control.interaction.start_time = 0;         // frame counter at the time of the selection process
 	this.control.interaction.hud_controller = nil;   // hud object that takes the callbacks. Updated when starting interaction.
-	return _inherited(...);
+	for (var ctrl in GetInteractionControls())
+	{
+		this.control.interaction.data[Format("%d", ctrl)] = [];
+	}
+	EnableInteractionUpdating(true);
+	return _inherited(by, ...);
 }
 
 
@@ -26,6 +32,8 @@ func OnShiftCursor(object new_cursor)
 	}
 	return _inherited(new_cursor, ...);
 }
+
+/* --- Script Callbacks --- */
 
 
 func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, int status)
@@ -44,6 +52,36 @@ func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, i
 	}
 
 	return inherited(plr, ctrl, x, y, strength, repeat, status, ...);
+}
+
+/* --- Internal --- */
+
+
+local FxIntUpdateInteraction = new Effect
+{
+	Name = "IntUpdateInteraction",
+
+	Timer = func ()
+	{
+		for (var ctrl in GetInteractionControls())
+		{
+			this.Target->GetInteractionInfos(ctrl);
+		}
+	}
+};
+
+
+public func EnableInteractionUpdating(bool enable)
+{
+	var fx = GetEffect(FxIntUpdateInteraction.Name, this);
+	if (fx && !enable)
+	{
+		RemoveEffect(nil, nil, fx);
+	}
+	else if (!fx && enable)
+	{
+		CreateEffect(FxIntUpdateInteraction, 1, 10);
+	}
 }
 
 
@@ -334,20 +372,21 @@ func BeginInteract(int ctrl)
 	this.control.interaction.is_interacting = true;
 	this.control.interaction.start_time = FrameCounter();
 
-	// Force update the HUD controller, which is responsible for pre-selecting the "best" object.
-	this.control.interaction.hud_controller->UpdateInteractionObject();
 	// Then, iff the HUD shows an object, pre-select one.
 	var interactions = GetInteractionInfos(ctrl, nil);
 	var interaction = interactions[0];
 	if (interaction)
 	{
 		SetNextInteraction(interaction, GetLength(interactions) > 1);
-		this.control.interaction.hud_controller->EnableInteractionUpdating(false);
+		EnableInteractionUpdating(false);
 	}
 	else
 	{
 		AbortInteract();
 	}
+	
+	// Force update the HUD controller
+	this.control.interaction.hud_controller->UpdateInteractionDisplay();
 }
 
 
@@ -381,7 +420,7 @@ func EndInteract()
 	}
 
 	SetCurrentInteraction(nil);
-	this.control.interaction.hud_controller->EnableInteractionUpdating(true);
+	EnableInteractionUpdating(true);
 }
 
 
@@ -418,7 +457,23 @@ func GetInteractionInfos(int ctrl, array sort)
 		}
 	}
 
+	// Save to cache
+	if (ctrl)
+	{
+		this.control.interaction.data[Format("%d", ctrl)] = possible_interactions;
+	}
+
 	return possible_interactions;
+}
+
+
+/**
+	Gets a cached version of GetInteractionInfos
+ */
+func GetInteractionData(int ctrl)
+{
+	AssertNotNil(ctrl);
+	return this.control.interaction.data[Format("%d", ctrl)];
 }
 
 

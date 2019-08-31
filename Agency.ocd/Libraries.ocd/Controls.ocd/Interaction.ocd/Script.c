@@ -17,7 +17,13 @@ local InteractionDistance = 12;
 
 func Construction()
 {
+	if (!this.control)
+	{
+		this.control = {};
+	}
 	this.control.is_interacting = false;
+	this.control.interaction_start_time = 0;
+	this.control.interaction_hud_controller = nil;
 	return _inherited(...);
 }
 

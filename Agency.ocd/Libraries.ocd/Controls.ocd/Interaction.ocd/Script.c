@@ -141,13 +141,7 @@ local FxControlInteraction = new Effect
 		{
 			this.dummy.Plane = 1000;
 		}
-		var cycle_interactions_hint = "";
-		if (has_multiple)
-		{
-			cycle_interactions_hint = Format("|<c 999999>[%s/%s] $Cycle$..</c>", GetPlayerControlAssignment(GetOwner(), CON_Left, true, false), GetPlayerControlAssignment(GetOwner(), CON_Right, true, false));
-		}
-		this.dummy->Message("@<c eeffee>%s</c>%s|", this.interaction_help.help_text, cycle_interactions_hint);
-	
+
 		// Center dummy!
 		this.dummy->SetVertexXY(0, this.obj->GetVertex(0, VTX_X), this.obj->GetVertex(0, VTX_Y));
 		this.dummy->SetAction("Attach", this.obj);

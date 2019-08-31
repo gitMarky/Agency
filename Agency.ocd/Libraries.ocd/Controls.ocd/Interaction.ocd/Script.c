@@ -5,32 +5,22 @@
 */
 
 
-/*
-	used properties:
-	this.control.is_interacting: whether interaction is in progress (user is holding [space])
-	this.control.interaction_start_time: frame counter at the time of the selection process
-	this.control.interaction_hud_controller: hud object that takes the callbacks. Updated when starting interaction.
-*/
-
 local InteractionDistance = 12;
 
 
 func Construction()
 {
-	if (!this.control)
-	{
-		this.control = {};
-	}
-	this.control.is_interacting = false;
-	this.control.interaction_start_time = 0;
-	this.control.interaction_hud_controller = nil;
+	CreateProplist("interaction", CreateProplist("control"));
+	this.control.interaction.is_interacting = false; // whether interaction is in progress (user is holding [space])
+	this.control.interaction.start_time = 0;         // frame counter at the time of the selection process
+	this.control.interaction.hud_controller = nil;   // hud object that takes the callbacks. Updated when starting interaction.
 	return _inherited(...);
 }
 
 
 func OnShiftCursor(object new_cursor)
 {
-	if (this.control.is_interacting)
+	if (this.control.interaction.is_interacting)
 	{
 		AbortInteract();
 	}
@@ -67,7 +57,7 @@ local FxControlInteraction = new Effect
 		{
 			this.obj = interaction.Target;
 			this.interaction = interaction;
-			this.interaction_help = this.Target.control.interaction_hud_controller->GetInteractionHelp(interaction, this.Target);
+			this.interaction_help = this.Target.control.interaction.hud_controller->GetInteractionHelp(interaction, this.Target);
 		
 			CreateDummy(has_multiple);
 		}
@@ -166,7 +156,7 @@ local FxControlInteraction = new Effect
 	
 		if (!custom_selector)
 		{
-			this.scheduled_selection_particle = (FrameCounter() - this.Target.control.interaction_start_time) < 10;
+			this.scheduled_selection_particle = (FrameCounter() - this.Target.control.interaction.start_time) < 10;
 			if (!this.scheduled_selection_particle)
 			{
 				this->CreateSelectorParticle();
@@ -340,19 +330,19 @@ func FindNextInteraction(int ctrl, proplist previous_interaction, int cycle_dir)
 
 func BeginInteract(int ctrl)
 {
-	this.control.interaction_hud_controller = this->GetHUDController();
-	this.control.is_interacting = true;
-	this.control.interaction_start_time = FrameCounter();
+	this.control.interaction.hud_controller = this->GetHUDController();
+	this.control.interaction.is_interacting = true;
+	this.control.interaction.start_time = FrameCounter();
 
 	// Force update the HUD controller, which is responsible for pre-selecting the "best" object.
-	this.control.interaction_hud_controller->UpdateInteractionObject();
+	this.control.interaction.hud_controller->UpdateInteractionObject();
 	// Then, iff the HUD shows an object, pre-select one.
 	var interactions = GetInteractionInfos(ctrl, nil);
 	var interaction = interactions[0];
 	if (interaction)
 	{
 		SetNextInteraction(interaction, GetLength(interactions) > 1);
-		this.control.interaction_hud_controller->EnableInteractionUpdating(false);
+		this.control.interaction.hud_controller->EnableInteractionUpdating(false);
 	}
 	else
 	{
@@ -371,7 +361,7 @@ func AbortInteract()
 
 func EndInteract()
 {
-	this.control.is_interacting = false;
+	this.control.interaction.is_interacting = false;
 
 	var executed = false;
 	if (GetCurrentInteraction())
@@ -391,7 +381,7 @@ func EndInteract()
 	}
 
 	SetCurrentInteraction(nil);
-	this.control.interaction_hud_controller->EnableInteractionUpdating(true);
+	this.control.interaction.hud_controller->EnableInteractionUpdating(true);
 }
 
 

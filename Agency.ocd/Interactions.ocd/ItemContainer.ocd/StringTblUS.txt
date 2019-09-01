@@ -1,2 +1,2 @@
-DescDump=Dump
-DescEnter=Enter
+DescConceal=Conceal
+DescRetrieve=Retrieve

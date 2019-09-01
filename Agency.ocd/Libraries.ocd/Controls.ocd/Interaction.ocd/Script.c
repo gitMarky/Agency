@@ -57,9 +57,9 @@ func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, i
 /* --- Internal --- */
 
 
-local FxIntUpdateInteraction = new Effect
+local FxUpdateInteraction = new Effect
 {
-	Name = "IntUpdateInteraction",
+	Name = "UpdateInteraction",
 
 	Timer = func ()
 	{
@@ -67,20 +67,25 @@ local FxIntUpdateInteraction = new Effect
 		{
 			this.Target->GetInteractionInfos(ctrl);
 		}
+		this.Target.control.interaction.hud_controller = this.Target->~GetHUDController();
+		if (this.Target.control.interaction.hud_controller)
+		{
+			this.Target.control.interaction.hud_controller->UpdateInteractionDisplay();
+		}
 	}
 };
 
 
 public func EnableInteractionUpdating(bool enable)
 {
-	var fx = GetEffect(FxIntUpdateInteraction.Name, this);
+	var fx = GetEffect(FxUpdateInteraction.Name, this);
 	if (fx && !enable)
 	{
 		RemoveEffect(nil, nil, fx);
 	}
 	else if (!fx && enable)
 	{
-		CreateEffect(FxIntUpdateInteraction, 1, 10);
+		CreateEffect(FxUpdateInteraction, 1, 10);
 	}
 }
 

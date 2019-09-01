@@ -81,7 +81,7 @@ func ShowInteraction(proplist interaction, bool show)
 	var target = interaction.Target;
 	if (target)
 	{
-		target = Format("%d", target->ObjectNumber());
+		target = Format("%d_%d", interaction.Control, target->ObjectNumber());
 		var existing = interaction_display[target];
 		if (existing)
 		{

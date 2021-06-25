@@ -72,7 +72,7 @@ protected func OnActionChanged(string oldaction)
 /* +++++++++++++++++++++++++++ Clonk Control +++++++++++++++++++++++++++ */
 
 /* Main control function */
-public func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, int status)
+public func ObjectControl(proplist plr, int ctrl, int x, int y, int strength, bool repeat, int status)
 {
 	if (!this)
 	{
@@ -570,7 +570,7 @@ func GetInteractionPriority(object target)
 		return -100;
 	}
 	// If no own clonk, prefer friendly
-	if (!Hostile(owner, GetOwner()))
+	if (!GetOwner()->Hostile(owner))
 	{	
 		return -120;
 	}

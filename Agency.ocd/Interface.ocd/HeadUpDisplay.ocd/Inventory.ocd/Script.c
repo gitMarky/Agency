@@ -151,7 +151,7 @@ func FxUpdateInventoryTimer()
 func UpdateInventory()
 {
 	// only display if we have a clonk and it's not disabled
-	var cursor = GetCursor(GetOwner());
+	var cursor = GetOwner()->GetCursor();
 	if (!cursor || !cursor->GetCrewEnabled())
 	{
 		if (inventory_gui_menu.Player != NO_OWNER)
@@ -323,7 +323,7 @@ func FxExtraSlotUpdaterTimer(object target, proplist effect)
 {
 	if (!this) return FX_Execute_Kill;
 	if (!target) return FX_Execute_Kill;
-	if (target->Contained() != GetCursor(GetOwner())) return FX_Execute_Kill;
+	if (target->Contained() != GetOwner()->GetCursor()) return FX_Execute_Kill;
 	return FX_OK;
 }
 

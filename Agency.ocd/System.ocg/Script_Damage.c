@@ -1,5 +1,5 @@
 
-global func CauseDamage(object victim, int by_player)
+global func CauseDamage(object victim, proplist by_player)
 {
 	if (GetType(this) != C4V_C4Object && GetType(this) != C4V_Def)
 	{

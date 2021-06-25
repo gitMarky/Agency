@@ -19,7 +19,7 @@ public func Create(object target, int x, int y, int xdir, int ydir, int color, i
 
 	// Do not create trajectories for script players, this will only cause lag.
 	var controller = target->GetController();
-	if (controller == NO_OWNER || GetPlayerType(controller) == C4PT_Script)
+	if (controller == NO_OWNER || controller.Type == C4PT_Script)
 	{
 		return;
 	}

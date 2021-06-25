@@ -1,15 +1,15 @@
 #include Library_Mission_Script
 
-func InitializePlayer(int player)
+func InitializePlayer(proplist player)
 {
 	_inherited(player, ...);
 	
 	// Set zoom and move player to the middle of the scenario.
-	SetPlayerZoomByViewRange(player, LandscapeWidth(), nil, PLRZOOM_Direct);
-	GetCrew(player)->SetPosition(120, 190);
-	GetCrew(player)->MakeInvincible();
-	GetCrew(player)->CreateContents(Item_Axe);
-	GetCrew(player)->CreateContents(Item_Hammer);
+	player->SetZoomByViewRange(LandscapeWidth(), nil, PLRZOOM_Direct);
+	player->GetCrew()->SetPosition(120, 190);
+	player->GetCrew()->MakeInvincible();
+	player->GetCrew()->CreateContents(Item_Axe);
+	player->GetCrew()->CreateContents(Item_Hammer);
 	return true;
 }
 

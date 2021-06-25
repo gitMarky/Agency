@@ -3,7 +3,7 @@
  */
 
 
-global func PlayerControl(int player, int control, id spec_id, int x, int y, int strength, bool repeat, int status)
+global func PlayerControl(proplist player, int control, id spec_id, int x, int y, int strength, bool repeat, int status)
 {
 	// Map the CON_CMC_UseAlt key to the regular CON_UseAlt
 	if (control == CON_Throw)

@@ -71,7 +71,7 @@ func Definition(id type)
 
 
 // Callback from Death() when the Clonk is really really dead
-func DeathEffects(int killed_by)
+func DeathEffects(proplist killed_by)
 {
 	_inherited(killed_by,...);
 
@@ -115,9 +115,9 @@ func SetSkin(int new_skin)
 	SetAction("Idle");
 	SetAction(prev_action);
 
-	if (GetColor() == 0)
+	if (GetColor() == 0 && GetOwner())
 	{
-		SetColor(GetPlayerColor(GetOwner()));
+		SetColor(GetOwner()->GetColor());
 	}
 }
 

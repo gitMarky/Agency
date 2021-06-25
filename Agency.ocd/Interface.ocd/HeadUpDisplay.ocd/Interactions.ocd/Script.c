@@ -26,7 +26,7 @@ func Destruction()
 */
 public func UpdateInteractionDisplay()
 {
-	var cursor = GetCursor(GetOwner());
+	var cursor = GetOwner()->GetCursor();
 	if (!cursor || !cursor->GetCrewEnabled())
 	{
 		HideInteractions();
@@ -94,7 +94,7 @@ func ShowInteraction(proplist interaction, bool show)
 			{
 				var message = CreateObject(FloatingMessage, 0, 0, GetOwner());
 				message.Visibility = VIS_Owner;
-				message->SetMessage(Format("[%s] %s: %s", GetPlayerControlAssignment(GetOwner(), interaction.Control, true, false), interaction.Name, interaction.Desc));
+				message->SetMessage(Format("[%s] %s: %s", GetOwner()->GetControlAssignment(interaction.Control, true, false), interaction.Name, interaction.Desc));
 				message->SetSpeed(0, 0);
 
 				interaction_display[target] = message;

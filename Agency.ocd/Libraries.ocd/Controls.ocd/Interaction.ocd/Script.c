@@ -36,7 +36,7 @@ func OnShiftCursor(object new_cursor)
 /* --- Script Callbacks --- */
 
 
-func ObjectControl(int plr, int ctrl, int x, int y, int strength, bool repeat, int status)
+func ObjectControl(proplist plr, int ctrl, int x, int y, int strength, bool repeat, int status)
 {
 	if (!this)
 	{
@@ -154,7 +154,7 @@ local FxControlInteraction = new Effect
 			Alpha = 200
 		};
 	
-		this.dummy->CreateParticle("Selector", 0, 0, 0, 0, 0, Particles_Colored(selector, GetPlayerColor(GetOwner())), 1);
+		this.dummy->CreateParticle("Selector", 0, 0, 0, 0, 0, Particles_Colored(selector, GetOwner()->GetColor()), 1);
 	},
 
 	CreateDummy = func (bool has_multiple)

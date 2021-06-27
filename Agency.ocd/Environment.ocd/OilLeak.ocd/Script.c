@@ -10,10 +10,10 @@ local Visibility = VIS_Editor;
 
 /* --- Engine Callbacks --- */
 
-func Definition(id type)
+func Construction(object by)
 {
-	_inherited(type, ...);
-	type.LeakMaterial = Material("Oil");
-	type.SprayTexture = "oil";
+	_inherited(by, ...);
+	this.LeakMaterial = Material("Oil");
+	this.SprayTexture = "oil";
 }
 

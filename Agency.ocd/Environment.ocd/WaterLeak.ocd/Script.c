@@ -13,11 +13,11 @@ public func CanBeElectrified(){  return LeakAreaActive != nil; }
 
 /* --- Engine Callbacks --- */
 
-func Definition(id type)
+func Construction(object by)
 {
-	_inherited(type, ...);
-	type.LeakMaterial = Material("Water");
-	type.SprayTexture = "water";
+	_inherited(by, ...);
+	this.LeakMaterial = Material("Water");
+	this.SprayTexture = "water";
 }
 
 
